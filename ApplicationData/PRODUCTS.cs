@@ -28,6 +28,7 @@ namespace kanzeed.ApplicationData
         public int category_id { get; set; }
         public int supplier_id { get; set; }
         public int stock_quantity { get; set; }
+        public string image { get; set; }
     
         public virtual CATEGORIES CATEGORIES { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

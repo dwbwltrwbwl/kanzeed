@@ -23,6 +23,10 @@ namespace kanzeed
         public MainWindow()
         {
             InitializeComponent();
+
+            ApplicationData.AppConnect.model01 = new ApplicationData.kanzeedEntities();
+            ApplicationData.AppFrame.frameMain = frameMain2;
+            frameMain2.Navigate(new Pages.Authorization());
         }
     }
 }

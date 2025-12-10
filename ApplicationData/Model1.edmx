@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="Хранилище kanzeedModel" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="Хранилище kanzeedModel" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="CATEGORIES">
           <Key>
             <PropertyRef Name="category_id" />
@@ -117,6 +117,7 @@
           <Property Name="category_id" Type="int" Nullable="false" />
           <Property Name="supplier_id" Type="int" Nullable="false" />
           <Property Name="stock_quantity" Type="int" Nullable="false" />
+          <Property Name="image" Type="nvarchar" MaxLength="100" />
         </EntityType>
         <EntityType Name="ROLES">
           <Key>
@@ -382,8 +383,7 @@
             <End Role="PRODUCTS" EntitySet="PRODUCTS" />
           </AssociationSet>
         </EntityContainer>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="kanzeedModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
@@ -524,6 +524,7 @@
           <NavigationProperty Name="CATEGORIES" Relationship="Self.FK_Products_Categories" FromRole="PRODUCTS" ToRole="CATEGORIES" />
           <NavigationProperty Name="ORDER_ITEMS" Relationship="Self.FK_OrderItems_Products" FromRole="PRODUCTS" ToRole="ORDER_ITEMS" />
           <NavigationProperty Name="SUPPLIERS" Relationship="Self.FK_Products_Suppliers" FromRole="PRODUCTS" ToRole="SUPPLIERS" />
+          <Property Name="image" Type="String" MaxLength="100" FixedLength="false" Unicode="true" />
         </EntityType>
         <EntityType Name="ROLES">
           <Key>
@@ -911,6 +912,7 @@
           <EntitySetMapping Name="PRODUCTS">
             <EntityTypeMapping TypeName="kanzeedModel.PRODUCTS">
               <MappingFragment StoreEntitySet="PRODUCTS">
+                <ScalarProperty Name="image" ColumnName="image" />
                 <ScalarProperty Name="product_id" ColumnName="product_id" />
                 <ScalarProperty Name="name" ColumnName="name" />
                 <ScalarProperty Name="sku" ColumnName="sku" />

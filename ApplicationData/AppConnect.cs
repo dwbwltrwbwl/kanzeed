@@ -8,6 +8,6 @@ namespace kanzeed.ApplicationData
 {
     class AppConnect
     {
-
+        public static kanzeedEntities model01;
     }
 }
