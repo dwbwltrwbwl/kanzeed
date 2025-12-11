@@ -1,5 +1,6 @@
 ﻿using kanzeed.ApplicationData;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -243,8 +244,8 @@ namespace kanzeed.Pages
     public static class AppData
     {
         public static UserData CurrentUser { get; set; }
+        public static Dictionary<int, int> CurrentCart { get; set; } = new Dictionary<int, int>();
     }
-
     public class UserData
     {
         public int Id { get; set; }

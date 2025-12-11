@@ -19,7 +19,16 @@ namespace kanzeed.ApplicationData
         {
             this.ORDER_ITEMS = new HashSet<ORDER_ITEMS>();
         }
-    
+        public string CurrentPhoto
+        {
+            get
+            {
+                if (String.IsNullOrEmpty(image) || String.IsNullOrWhiteSpace(image))
+                    return @"\Images\nofoto.png";
+                else
+                    return @"\Images\" + image;
+            }
+        }
         public int product_id { get; set; }
         public string name { get; set; }
         public string sku { get; set; }
