@@ -88,7 +88,7 @@
                                      FontSize="14"
                                      Foreground="#333333"
                                      Text=""
-                                     VerticalContentAlignment="Center">
+                                     VerticalContentAlignment="Center" MaxLength="50">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Enter" Command="{Binding LoginCommand}"/>
                                 </TextBox.InputBindings>
@@ -117,7 +117,7 @@
                                          Padding="15,0,75,0"
                                          FontSize="14"
                                          Foreground="#333333"
-                                         VerticalContentAlignment="Center">
+                                         VerticalContentAlignment="Center" MaxLength="50">
                                 <PasswordBox.InputBindings>
                                     <KeyBinding Key="Enter" Command="{Binding LoginCommand}"/>
                                 </PasswordBox.InputBindings>

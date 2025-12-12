@@ -1,7 +1,7 @@
 ﻿using kanzeed.ApplicationData;
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -10,172 +10,319 @@ using System.Windows.Media;
 namespace kanzeed.Pages
 {
     /// <summary>
-    /// Логика взаимодействия для Authorization.xaml
+    /// Logic for Authorization.xaml
     /// </summary>
     public partial class Authorization : Page
     {
+        // Динамически создаваемые TextBlock'ы для ошибок (чтобы не менять XAML)
+        private TextBlock emailErrorTextBlock;
+        private TextBlock passwordErrorTextBlock;
+
+        // Вспомогательный TextBox для отображения пароля при "показать"
+        private TextBox passwordRevealTextBox;
+
         public Authorization()
         {
             InitializeComponent();
+
+            // Создаём и вставляем inline-подсказки под полями (не меняя XAML)
+            CreateInlineErrorControls();
+
+            // Подпишемся на события, чтобы очищать подсказки при вводе
+            EmailTextBox.TextChanged += (s, e) => ClearEmailError();
+            PasswordBox.PasswordChanged += (s, e) =>
+            {
+                // синхронизируем reveal textbox если он видим
+                if (passwordRevealTextBox != null && passwordRevealTextBox.Visibility == Visibility.Visible)
+                    passwordRevealTextBox.Text = PasswordBox.Password;
+
+                ClearPasswordError();
+            };
+
+            // Если пользователь будет печатать в reveal textbox — синхронизируем обратно
+            // (создаётся лениво при первом показе)
         }
+
+        #region Inline UI helpers (вставляем подсказки в существующий XAML без правки XAML)
+
+        private void CreateInlineErrorControls()
+        {
+            try
+            {
+                // Email: EmailTextBox -> parent Grid -> parent Border -> parent StackPanel (Grid.Row=1)
+                var emailGrid = EmailTextBox.Parent as Grid;
+                if (emailGrid != null)
+                {
+                    var emailBorder = emailGrid.Parent as Border;
+                    var emailStack = emailBorder?.Parent as StackPanel;
+                    if (emailStack != null)
+                    {
+                        emailErrorTextBlock = new TextBlock
+                        {
+                            Foreground = (Brush)new BrushConverter().ConvertFromString("#C0392B"),
+                            FontSize = 12,
+                            Margin = new Thickness(6, 6, 0, 0),
+                            Visibility = Visibility.Collapsed,
+                        };
+                        emailStack.Children.Add(emailErrorTextBlock);
+                    }
+                }
+
+                // Password: PasswordBox -> parent Grid -> parent Border -> parent StackPanel (Grid.Row=2)
+                var pwdGrid = PasswordBox.Parent as Grid;
+                if (pwdGrid != null)
+                {
+                    var pwdBorder = pwdGrid.Parent as Border;
+                    var pwdStack = pwdBorder?.Parent as StackPanel;
+                    if (pwdStack != null)
+                    {
+                        passwordErrorTextBlock = new TextBlock
+                        {
+                            Foreground = (Brush)new BrushConverter().ConvertFromString("#C0392B"),
+                            FontSize = 12,
+                            Margin = new Thickness(6, 6, 0, 0),
+                            Visibility = Visibility.Collapsed,
+                        };
+                        pwdStack.Children.Add(passwordErrorTextBlock);
+                    }
+                }
+            }
+            catch
+            {
+                // В случае ошибки добавления подсказок — ничего критичного, продолжим без inline-подсказок.
+                emailErrorTextBlock = null;
+                passwordErrorTextBlock = null;
+            }
+        }
+
+        private void ShowEmailError(string message)
+        {
+            if (emailErrorTextBlock != null)
+            {
+                emailErrorTextBlock.Text = message;
+                emailErrorTextBlock.Visibility = Visibility.Visible;
+            }
+            // Также выделим бордер поля
+            SetBorderBrushForControl(EmailTextBox, "#E74C3C");
+        }
+
+        private void ClearEmailError()
+        {
+            if (emailErrorTextBlock != null)
+            {
+                emailErrorTextBlock.Text = "";
+                emailErrorTextBlock.Visibility = Visibility.Collapsed;
+            }
+            SetBorderBrushForControl(EmailTextBox, "#DDDDDD");
+        }
+
+        private void ShowPasswordError(string message)
+        {
+            if (passwordErrorTextBlock != null)
+            {
+                passwordErrorTextBlock.Text = message;
+                passwordErrorTextBlock.Visibility = Visibility.Visible;
+            }
+            SetBorderBrushForControl(PasswordBox, "#E74C3C");
+        }
+
+        private void ClearPasswordError()
+        {
+            if (passwordErrorTextBlock != null)
+            {
+                passwordErrorTextBlock.Text = "";
+                passwordErrorTextBlock.Visibility = Visibility.Collapsed;
+            }
+            SetBorderBrushForControl(PasswordBox, "#DDDDDD");
+        }
+
+        // Установить цвет Border для обёртывающего Border вокруг контролла (если найден)
+        private void SetBorderBrushForControl(Control control, string hexBrush)
+        {
+            try
+            {
+                var parentGrid = control.Parent as Grid;
+                if (parentGrid == null) return;
+                var border = parentGrid.Parent as Border;
+                if (border == null) return;
+                border.BorderBrush = (Brush)new BrushConverter().ConvertFromString(hexBrush);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        #endregion
+
+        #region Password reveal toggle (корректная работа без удаления контролов)
 
         private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var grid = PasswordBox.Parent as Grid;
-                if (grid == null) return;
-
-                var textBox = grid.Children.OfType<TextBox>().FirstOrDefault();
-
-                if (textBox == null)
+                // Если reveal textbox ещё не создан — создаём и размещаем его поверх PasswordBox (в той же Grid: column 0)
+                if (passwordRevealTextBox == null)
                 {
-                    // Скрыть пароль (переключить на TextBox)
-                    var password = PasswordBox.Password;
-                    PasswordBox.Visibility = Visibility.Collapsed;
+                    var pwdGrid = PasswordBox.Parent as Grid;
+                    if (pwdGrid == null) return;
 
-                    var newTextBox = new TextBox
+                    passwordRevealTextBox = new TextBox
                     {
-                        Text = password,
-                        FontSize = 14,
-                        Foreground = Brushes.Black,
+                        Visibility = Visibility.Collapsed,
                         Background = Brushes.Transparent,
                         BorderThickness = new Thickness(0),
-                        VerticalContentAlignment = VerticalAlignment.Center,
-                        Padding = new Thickness(15, 12, 45, 12)
+                        Padding = PasswordBox.Padding,
+                        FontSize = PasswordBox.FontSize,
+                        Foreground = PasswordBox.Foreground,
+                        VerticalContentAlignment = VerticalAlignment.Center
                     };
 
-                    grid.Children.Add(newTextBox);
-                    Grid.SetColumn(newTextBox, 0);
-                    Grid.SetRow(newTextBox, 0);
-                    TogglePasswordButton.Content = "👁‍🗨"; // Перечеркнутый глаз
+                    // Подписываемся на события изменений текста
+                    passwordRevealTextBox.TextChanged += PasswordRevealTextBox_TextChanged;
+
+                    // Вставляем в Grid в ту же колонку (Grid.Column=0)
+                    Grid.SetColumn(passwordRevealTextBox, 0);
+                    pwdGrid.Children.Add(passwordRevealTextBox);
+                }
+
+                // Переключение видимости
+                if (passwordRevealTextBox.Visibility == Visibility.Collapsed)
+                {
+                    // Показать: копируем пароль и показываем TextBox
+                    passwordRevealTextBox.Text = PasswordBox.Password;
+                    PasswordBox.Visibility = Visibility.Collapsed;
+                    passwordRevealTextBox.Visibility = Visibility.Visible;
+                    TogglePasswordButton.Content = "🙈"; // скрыть-иконка
                 }
                 else
                 {
-                    // Показать пароль (вернуть PasswordBox)
-                    var password = textBox.Text;
-                    grid.Children.Remove(textBox);
-
-                    PasswordBox.Password = password;
+                    // Скрыть: скопировать из textbox обратно в passwordbox и показать PasswordBox
+                    PasswordBox.Password = passwordRevealTextBox.Text;
+                    passwordRevealTextBox.Visibility = Visibility.Collapsed;
                     PasswordBox.Visibility = Visibility.Visible;
-                    TogglePasswordButton.Content = "👁"; // Обычный глаз
+                    TogglePasswordButton.Content = "👁"; // показать-иконка
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка переключения пароля: {ex.Message}", "Ошибка",
+                MessageBox.Show($"Ошибка переключения видимости пароля: {ex.Message}", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void GuestLoginButton_Click(object sender, RoutedEventArgs e)
+        private void PasswordRevealTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            // Вход как гость (клиент с ролью 1)
+            // если пользователь редактирует видимый пароль — синхронизируем в PasswordBox (только значение, не видимость)
             try
             {
-                // Создаем временного гостевого пользователя
-                var guestUser = new CUSTOMERS
+                if (passwordRevealTextBox != null)
                 {
-                    first_name = "Гость",
-                    last_name = "",
-                    middle_name = "",
-                    id_role = 1 // Роль клиента
-                };
-
-                MessageBox.Show("Вы вошли как гость!", "Уведомление",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // Переход на главную страницу для гостя
-                NavigationService.Navigate(new DataOutput());
+                    PasswordBox.Password = passwordRevealTextBox.Text;
+                    ClearPasswordError();
+                }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка: {ex.Message}", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch { /*ignore*/ }
         }
+
+        #endregion
+
+        #region Login logic + validation
 
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Проверка на пустые поля
-                if (string.IsNullOrWhiteSpace(EmailTextBox.Text))
+                // очищаем старые подсказки
+                ClearEmailError();
+                ClearPasswordError();
+
+                string rawEmail = EmailTextBox.Text ?? string.Empty;
+                string email = rawEmail.Trim();
+                string password = PasswordBox.Visibility == Visibility.Visible ? PasswordBox.Password : (passwordRevealTextBox?.Text ?? string.Empty);
+
+                bool ok = true;
+
+                // email: required
+                if (string.IsNullOrEmpty(email))
                 {
-                    MessageBox.Show("Введите email", "Ошибка",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    EmailTextBox.Focus();
-                    return;
+                    ShowEmailError("Введите email");
+                    ok = false;
+                }
+                else if (email.Length > 50)
+                {
+                    ShowEmailError("Email должен содержать не более 50 символов");
+                    ok = false;
+                }
+                else if (!IsValidEmail(email))
+                {
+                    ShowEmailError("Введите корректный email");
+                    ok = false;
                 }
 
-                if (string.IsNullOrWhiteSpace(PasswordBox.Password))
+                // password: required
+                if (string.IsNullOrWhiteSpace(password))
                 {
-                    MessageBox.Show("Введите пароль", "Ошибка",
-                        MessageBoxButton.OK, MessageBoxImage.Warning);
-                    PasswordBox.Focus();
-                    return;
+                    ShowPasswordError("Введите пароль");
+                    ok = false;
+                }
+                else if (password.Length < 6)
+                {
+                    ShowPasswordError("Пароль должен содержать минимум 6 символов");
+                    ok = false;
+                }
+                else if (password.Length > 50)
+                {
+                    ShowPasswordError("Пароль должен содержать не более 50 символов");
+                    ok = false;
+                }
+                else if (password.Any(char.IsControl))
+                {
+                    ShowPasswordError("Пароль содержит недопустимые управляющие символы");
+                    ok = false;
                 }
 
-                // Сначала ищем в клиентах
+                if (!ok) return;
+
+                // Авторизация: нормализуем email
+                string normalizedEmail = email.ToLowerInvariant();
+
+                // сначала клиенты
                 var customer = AppConnect.model01.CUSTOMERS.FirstOrDefault(x =>
-                    x.email == EmailTextBox.Text &&
-                    x.password == PasswordBox.Password);
+                    x.email.ToLower() == normalizedEmail && x.password == password);
 
-                // Если не нашли в клиентах, ищем в сотрудниках
-                if (customer == null)
+                if (customer != null)
                 {
-                    var employee = AppConnect.model01.EMPLOYEES.FirstOrDefault(x =>
-                        x.email == EmailTextBox.Text &&
-                        x.password == PasswordBox.Password);
-
-                    if (employee != null)
-                    {
-                        // Авторизация сотрудника
-                        ProcessEmployeeLogin(employee);
-                        return;
-                    }
-
-                    MessageBox.Show("Неверный email или пароль", "Ошибка авторизации",
-                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    ProcessCustomerLogin(customer);
                     return;
                 }
 
-                // Авторизация клиента
-                ProcessCustomerLogin(customer);
+                // потом сотрудники
+                var employee = AppConnect.model01.EMPLOYEES.FirstOrDefault(x =>
+                    x.email.ToLower() == normalizedEmail && x.password == password);
+
+                if (employee != null)
+                {
+                    ProcessEmployeeLogin(employee);
+                    return;
+                }
+
+                // Если не найдено — показать inline-ошибку (под полями)
+                ShowEmailError("Неверный email или пароль");
+                ShowPasswordError(""); // подсветка пароля (без текста) — чтобы показать, что проблема и там
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка " + ex.Message.ToString() + " Критическая ошибка приложения!",
-                    "Уведомление", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"Ошибка авторизации: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         private void ProcessCustomerLogin(CUSTOMERS customer)
         {
-            // Получаем роль клиента
             var role = AppConnect.model01.ROLES.FirstOrDefault(r => r.role_id == customer.id_role);
             string roleName = role?.role_name ?? "Неизвестная роль";
-
-            // Формируем ФИО
             string fullName = $"{customer.last_name} {customer.first_name} {customer.middle_name}".Trim();
 
-            switch (customer.id_role)
-            {
-                case 1: // Клиент
-                    MessageBox.Show($"Здравствуйте, {fullName}! (Роль: {roleName})",
-                        "Уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                    break;
-                case 2: // Менеджер (если клиент может быть менеджером)
-                    MessageBox.Show($"Здравствуйте, Менеджер {fullName}!",
-                        "Уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                    break;
-                default:
-                    MessageBox.Show($"Здравствуйте, {fullName}! (Роль: {roleName})",
-                        "Уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                    break;
-            }
-
-            // Сохраняем данные пользователя в статическом классе (если нужно)
             AppData.CurrentUser = new UserData
             {
                 Id = customer.customer_id,
@@ -186,40 +333,19 @@ namespace kanzeed.Pages
                 IsEmployee = false
             };
 
-            // Переход на главную страницу
-            NavigationService.Navigate(new DataOutput());
+            // очистим корзину при новом логине
+            AppData.CurrentCart = new System.Collections.Generic.Dictionary<int, int>();
+
+            // переходим на DataOutput
+            NavigationService?.Navigate(new DataOutput());
         }
 
         private void ProcessEmployeeLogin(EMPLOYEES employee)
         {
-            // Получаем роль сотрудника
             var role = AppConnect.model01.ROLES.FirstOrDefault(r => r.role_id == employee.id_role);
             string roleName = role?.role_name ?? "Неизвестная роль";
-
-            // Формируем ФИО
             string fullName = $"{employee.last_name} {employee.first_name} {employee.middle_name}".Trim();
 
-            switch (employee.id_role)
-            {
-                case 2: // Менеджер
-                    MessageBox.Show($"Здравствуйте, Менеджер {fullName}!",
-                        "Уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                    break;
-                case 3: // Курьер
-                    MessageBox.Show($"Здравствуйте, Курьер {fullName}!",
-                        "Уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                    break;
-                case 4: // Администратор
-                    MessageBox.Show($"Здравствуйте, Администратор {fullName}!",
-                        "Уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                    break;
-                default:
-                    MessageBox.Show($"Здравствуйте, Сотрудник {fullName}! (Роль: {roleName})",
-                        "Уведомление", MessageBoxButton.OK, MessageBoxImage.Information);
-                    break;
-            }
-
-            // Сохраняем данные сотрудника
             AppData.CurrentUser = new UserData
             {
                 Id = employee.employee_id,
@@ -230,29 +356,45 @@ namespace kanzeed.Pages
                 IsEmployee = true
             };
 
-            // Переход на главную страницу (может быть другой для сотрудников)
-            NavigationService.Navigate(new DataOutput());
+            AppData.CurrentCart = new System.Collections.Generic.Dictionary<int, int>();
+
+            NavigationService?.Navigate(new DataOutput());
+        }
+
+        #endregion
+
+        #region Guest / Register
+
+        private void GuestLoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Вход как гость — оставляем CurrentUser = null (или можно создать временный клиент)
+            AppData.CurrentUser = null;
+            AppData.CurrentCart = new System.Collections.Generic.Dictionary<int, int>();
+            NavigationService?.Navigate(new DataOutput());
         }
 
         private void Register_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            NavigationService.Navigate(new Pages.Registration());
+            NavigationService?.Navigate(new Pages.Registration());
         }
-    }
 
-    // Вспомогательный класс для хранения данных пользователя
-    public static class AppData
-    {
-        public static UserData CurrentUser { get; set; }
-        public static Dictionary<int, int> CurrentCart { get; set; } = new Dictionary<int, int>();
-    }
-    public class UserData
-    {
-        public int Id { get; set; }
-        public string FullName { get; set; }
-        public string Email { get; set; }
-        public int RoleId { get; set; }
-        public string RoleName { get; set; }
-        public bool IsEmployee { get; set; }
+        #endregion
+
+        #region Utilities
+
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var addr = new MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        #endregion
     }
 }

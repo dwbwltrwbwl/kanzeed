@@ -76,7 +76,7 @@
                                      FontSize="14"
                                      Foreground="#333333"
                                      Text=""
-                                     VerticalContentAlignment="Center"/>
+                                     VerticalContentAlignment="Center" MaxLength="50"/>
                         </Border>
                     </StackPanel>
 
@@ -99,7 +99,7 @@
                                      FontSize="14"
                                      Foreground="#333333"
                                      Text=""
-                                     VerticalContentAlignment="Center"/>
+                                     VerticalContentAlignment="Center" MaxLength="50"/>
                         </Border>
                     </StackPanel>
 
@@ -122,7 +122,7 @@
                                      FontSize="14"
                                      Foreground="#333333"
                                      Text=""
-                                     VerticalContentAlignment="Center"/>
+                                     VerticalContentAlignment="Center" MaxLength="50"/>
                         </Border>
                     </StackPanel>
                 </Grid>
@@ -147,7 +147,7 @@
                                      FontSize="14"
                                      Foreground="#333333"
                                      Text=""
-                                     VerticalContentAlignment="Center"/>
+                                     VerticalContentAlignment="Center" MaxLength="50"/>
                         </Grid>
                     </Border>
                 </StackPanel>
@@ -172,7 +172,7 @@
                                      FontSize="14"
                                      Foreground="#333333"
                                      Text=""
-                                     VerticalContentAlignment="Center"/>
+                                     VerticalContentAlignment="Center" MaxLength="20"/>
                         </Grid>
                     </Border>
                 </StackPanel>
@@ -196,7 +196,7 @@
                                          Padding="12,0,75,0"
                                          FontSize="14"
                                          Foreground="#333333"
-                                         VerticalContentAlignment="Center"/>
+                                         VerticalContentAlignment="Center" MaxLength="50"/>
                             <Button x:Name="TogglePasswordButton"
                                     Content="👁"
                                     FontSize="12"
@@ -234,7 +234,7 @@
                                          Padding="12,0,75,0"
                                          FontSize="14"
                                          Foreground="#333333"
-                                         VerticalContentAlignment="Center"/>
+                                         VerticalContentAlignment="Center" MaxLength="50"/>
                             <Button x:Name="ToggleConfirmPasswordButton"
                                     Content="👁"
                                     FontSize="12"

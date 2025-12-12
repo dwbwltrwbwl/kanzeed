@@ -4,6 +4,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       xmlns:local="clr-namespace:kanzeed.Pages"
+      xmlns:data="clr-namespace:kanzeed.ApplicationData"
       mc:Ignorable="d"
       Title="Каталог товаров"
       Background="#F8F9FA"
@@ -49,6 +50,7 @@
 
         <!-- Конвертер -->
         <local:RoleToVisibilityConverter x:Key="RoleToVisibilityConverter"/>
+        
     </Page.Resources>
 
     <Grid>
@@ -79,7 +81,7 @@
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <!-- Корзина — только для Клиента (role_id == 1) -->
                             <Button Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0" Padding="10,0" Click="ViewCartButton_Click"
-                                        Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=Cart}">
+                                        Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=Cart}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="🛒" Margin="0,0,5,0"/>
                                     <TextBlock x:Name="CartCountText" Text="Корзина (0)"/>
@@ -88,7 +90,7 @@
 
                             <!-- Таблицы — менеджер и админ -->
                             <Button Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0" Padding="10,0" Click="ViewTablesButton_Click"
-                                        Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ViewTables}">
+                                        Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ViewTables}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📋" Margin="0,0,5,0"/>
                                     <TextBlock Text="Таблицы"/>
@@ -97,7 +99,7 @@
 
                             <!-- Управление пользователями — только админ -->
                             <Button Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0" Padding="10,0" Click="ViewUsersButton_Click"
-                                        Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ManageUsers}">
+                                        Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ManageUsers}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="👥" Margin="0,0,5,0"/>
                                     <TextBlock Text="Пользователи"/>
@@ -119,7 +121,7 @@
                 </Border>
 
                 <Border Grid.Row="1" BorderBrush="#EEEEEE" BorderThickness="0,1,0,1" Padding="20,15"
-                            Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ViewCatalog}">
+                            Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ViewCatalog}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -160,7 +162,7 @@
                                     <ComboBoxItem Content="По названию (Я-А)"/>
                                     <ComboBoxItem Content="По цене (возрастание)"/>
                                     <ComboBoxItem Content="По цене (убывание)"/>
-                                    <ComboBoxItem Content="По количеству на складу"/>
+                                    <ComboBoxItem Content="По количеству на складе"/>
                                 </ComboBox>
                             </StackPanel>
 
@@ -178,7 +180,7 @@
 
                 <!-- MAIN LIST (catalog) - виден только авторизованным users -->
                 <Border Grid.Row="2" Padding="20"
-                            Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ViewCatalog}">
+                            Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ViewCatalog}">
                     <Grid>
                         <ListView x:Name="listProducts"
           SelectionChanged="listProducts_SelectionChanged"
@@ -210,7 +212,7 @@
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding price, StringFormat={}{0:C}}" FontSize="16" FontWeight="Bold" Foreground="#333333"/>
+                                                <TextBlock Text="{Binding price, StringFormat={}{0} ₽}" FontSize="16" FontWeight="Bold" Foreground="#333333"/>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="3" VerticalAlignment="Center">
@@ -221,7 +223,7 @@
                                             <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <!-- Add to cart - только клиент (role_id == 1) -->
                                                 <Button Style="{StaticResource PrimaryButtonStyle}" Height="30" Padding="10,0" Margin="0,0,5,0" Click="AddToCartButton_Click"
-                                                            Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=AddToCart}">
+                                                            Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=AddToCart}">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="+"/>
                                                         <TextBlock Text="В корзину" Margin="5,0,0,0"/>
@@ -230,13 +232,13 @@
 
                                                 <!-- Edit - менеджер(2) и админ(4) -->
                                                 <Button Style="{StaticResource SecondaryButtonStyle}" Height="30" Width="30" Padding="0" Margin="0,0,5,0" Click="EditButton_Click" ToolTip="Редактировать"
-                                                            Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=EditProduct}">
+                                                            Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=EditProduct}">
                                                     <TextBlock Text="✎"/>
                                                 </Button>
 
                                                 <!-- Delete - только админ -->
                                                 <Button Style="{StaticResource SecondaryButtonStyle}" Height="30" Width="30" Padding="0" Click="DeleteButton_Click" ToolTip="Удалить" Background="#FFF0F0" BorderBrush="#FF4444"
-                                                            Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=DeleteProduct}">
+                                                            Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=DeleteProduct}">
                                                     <TextBlock Text="🗑" Foreground="#FF4444"/>
                                                 </Button>
                                             </StackPanel>
@@ -267,7 +269,7 @@
 
                         <!-- Add product visible to manager and admin -->
                         <Button Grid.Column="0" Style="{StaticResource PrimaryButtonStyle}" Click="AddButton_Click"
-                                    Visibility="{Binding Source={x:Static local:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=AddProduct}">
+                                    Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=AddProduct}">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="+" Margin="0,0,5,0"/>
                                 <TextBlock Text="Добавить товар"/>

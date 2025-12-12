@@ -1,22 +1,15 @@
 ﻿using kanzeed.ApplicationData;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 using kanzeed.Services;
+using System.Globalization;
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace kanzeed.Pages
 {
@@ -35,28 +28,17 @@ namespace kanzeed.Pages
 
             try
             {
-                // Инициализация фильтров и сортировки
+                // Привязка контекста (для конвертеров/visibility)
+                this.DataContext = AppData.CurrentUser;
+
+                // Инициализация UI контролов (зададим дефолтные индексы, но ComboBox'ы будут заполнены в ReloadProducts)
                 ComboFilter.SelectedIndex = 0;
                 ComboSort.SelectedIndex = 0;
 
-                // Загрузка всех товаров
-                allProducts = AppConnect.model01.PRODUCTS.ToList();
-                listProducts.ItemsSource = allProducts;
+                // Первичная загрузка данных
+                ReloadProducts();
 
-                // Загрузка категорий для фильтра
-                var categories = AppConnect.model01.CATEGORIES.ToList();
-                foreach (var category in categories)
-                {
-                    categoriesList.Add(category.name);
-                }
-
-                // Заполнение ComboBox категорий
-                ComboFilter.ItemsSource = categoriesList;
-
-                UpdateFoundCount(allProducts.Count);
-                UpdateStatistics();
-
-                // Обновление статуса пользователя
+                // Обновление статуса корзины
                 UpdateCartCount();
             }
             catch (Exception ex)
@@ -65,7 +47,82 @@ namespace kanzeed.Pages
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            this.DataContext = AppData.CurrentUser;
+            // Подпишемся на событие навигации, чтобы при возврате на эту страницу перезагружать данные
+            // NavigationService может быть null в конструкторе в некоторых сценариях, поэтому проверяем
+            if (this.NavigationService != null)
+            {
+                this.NavigationService.Navigated += NavigationService_Navigated;
+            }
+
+            // Отписаться при выгрузке страницы
+            this.Unloaded += DataOutput_Unloaded;
+        }
+
+        private void NavigationService_Navigated(object sender, NavigationEventArgs e)
+        {
+            // Выполняем действия только если навигация вернула нас на эту страницу
+            if (e.Content == this)
+            {
+                try
+                {
+                    // Обновляем контекст пользователя (на случай входа/выхода) и перезагружаем товары
+                    this.DataContext = AppData.CurrentUser;
+                    ReloadProducts();
+                    UpdateCartCount();
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"NavigationService_Navigated error: {ex}");
+                }
+            }
+        }
+
+        private void DataOutput_Unloaded(object sender, RoutedEventArgs e)
+        {
+            // Отписываемся от событий, чтобы избежать утечек памяти и лишних вызовов
+            if (this.NavigationService != null)
+                this.NavigationService.Navigated -= NavigationService_Navigated;
+
+            this.Unloaded -= DataOutput_Unloaded;
+        }
+
+        /// <summary>
+        /// Полная перезагрузка товаров, категорий и обновление UI.
+        /// </summary>
+        private void ReloadProducts()
+        {
+            try
+            {
+                // Загружаем товары напрямую из БД, чтобы всегда иметь актуальные данные
+                allProducts = AppConnect.model01.PRODUCTS
+                    .OrderBy(p => p.name)
+                    .ToList();
+
+                // Привязка к ListView
+                listProducts.ItemsSource = allProducts;
+
+                // Перезагрузка списка категорий (для фильтра)
+                categoriesList = new List<string> { "Все категории" };
+                var categories = AppConnect.model01.CATEGORIES.OrderBy(c => c.name).ToList();
+                foreach (var category in categories)
+                {
+                    categoriesList.Add(category.name);
+                }
+                ComboFilter.ItemsSource = categoriesList;
+
+                // Установим элементы ComboBox'ов в дефолтные значения, если они не установлены
+                if (ComboFilter.SelectedIndex < 0) ComboFilter.SelectedIndex = 0;
+                if (ComboSort.SelectedIndex < 0) ComboSort.SelectedIndex = 0;
+
+                // Обновления счётчиков и статистики
+                UpdateFoundCount(allProducts.Count);
+                UpdateStatistics();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при перезагрузке товаров: {ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void UpdateCartCount()
@@ -76,8 +133,16 @@ namespace kanzeed.Pages
                 return;
             }
 
-            int count = CartService.GetTotalQuantity();
-            CartCountText.Text = $"Корзина ({count})";
+            try
+            {
+                int count = CartService.GetTotalQuantity();
+                CartCountText.Text = $"Корзина ({count})";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"UpdateCartCount error: {ex}");
+                CartCountText.Text = "Корзина (0)";
+            }
         }
 
         private void UpdateStatistics()
@@ -136,19 +201,22 @@ namespace kanzeed.Pages
         {
             if (listProducts.SelectedItem is PRODUCTS selectedProduct)
             {
-                // Проверка прав доступа через AppConnect
-                //if (AppConnect.IsAdmin() || AppConnect.IsManager())
-                //{
-                //    // Открытие окна редактирования
-                //    MessageBox.Show($"Редактирование товара: {selectedProduct.name}",
-                //        "Редактирование", MessageBoxButton.OK, MessageBoxImage.Information);
-                //    // NavigationService.Navigate(new EditProductPage(selectedProduct));
-                //}
-                //else
-                //{
-                //    MessageBox.Show("У вас недостаточно прав для редактирования товаров",
-                //        "Ошибка доступа", MessageBoxButton.OK, MessageBoxImage.Warning);
-                //}
+                try
+                {
+                    // Рекомендуется получить объект из контекста, чтобы EF отслеживал изменения
+                    var trackedProduct = AppConnect.model01.PRODUCTS
+                        .FirstOrDefault(p => p.product_id == selectedProduct.product_id);
+
+                    // Если по какой-то причине не найден — всё равно передадим выбранный объект
+                    var productToEdit = trackedProduct ?? selectedProduct;
+
+                    NavigationService.Navigate(new ProductEditPage(productToEdit));
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Не удалось открыть страницу редактирования: {ex.Message}",
+                        "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             else
             {
@@ -159,28 +227,25 @@ namespace kanzeed.Pages
 
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            // Проверка прав доступа через AppConnect
-            //if (AppConnect.IsManager() || AppConnect.IsAdmin())
-            //{
-            //    // Создание нового товара
-            //    MessageBox.Show("Добавление нового товара",
-            //        "Добавление", MessageBoxButton.OK, MessageBoxImage.Information);
-            //    // NavigationService.Navigate(new EditProductPage(new PRODUCTS()));
-            //}
-            //else
-            //{
-            //    MessageBox.Show("У вас недостаточно прав для добавления товаров",
-            //        "Ошибка доступа", MessageBoxButton.OK, MessageBoxImage.Warning);
-            //}
+            NavigationService.Navigate(new ProductEditPage());
         }
 
         private void UpdateProductList()
         {
             try
             {
-                string searchText = TextSearch.Text.ToLower();
+                string searchText = TextSearch.Text?.ToLower() ?? string.Empty;
                 string selectedCategory = ComboFilter.SelectedItem?.ToString() ?? "Все категории";
-                string selectedSort = ComboSort.SelectedItem?.ToString() ?? "По названию (А-Я)";
+
+                // Получаем реальный текст выбранного пункта сортировки
+                string selectedSort = null;
+                if (ComboSort.SelectedItem is ComboBoxItem cbi)
+                    selectedSort = cbi.Content?.ToString();
+                else
+                    selectedSort = ComboSort.SelectedItem?.ToString();
+
+                if (string.IsNullOrEmpty(selectedSort))
+                    selectedSort = "По названию (А-Я)";
 
                 if (allProducts == null)
                 {
@@ -201,15 +266,15 @@ namespace kanzeed.Pages
                     (!ShowLowStockWarning.IsChecked.HasValue || !ShowLowStockWarning.IsChecked.Value || product.stock_quantity < 10))
                     .ToList();
 
-                // Сортировка
+                // Сортировка — аккуратно с null-ами
                 List<PRODUCTS> sortedProducts;
                 switch (selectedSort)
                 {
                     case "По названию (А-Я)":
-                        sortedProducts = filteredProducts.OrderBy(product => product.name).ToList();
+                        sortedProducts = filteredProducts.OrderBy(product => product.name ?? string.Empty).ToList();
                         break;
                     case "По названию (Я-А)":
-                        sortedProducts = filteredProducts.OrderByDescending(product => product.name).ToList();
+                        sortedProducts = filteredProducts.OrderByDescending(product => product.name ?? string.Empty).ToList();
                         break;
                     case "По цене (возрастание)":
                         sortedProducts = filteredProducts.OrderBy(product => product.price).ToList();
@@ -217,6 +282,8 @@ namespace kanzeed.Pages
                     case "По цене (убывание)":
                         sortedProducts = filteredProducts.OrderByDescending(product => product.price).ToList();
                         break;
+                    // учитываем обе возможные строки (с опечаткой и без)
+                    case "По количеству на складу":
                     case "По количеству на складе":
                         sortedProducts = filteredProducts.OrderBy(product => product.stock_quantity).ToList();
                         break;
@@ -273,56 +340,7 @@ namespace kanzeed.Pages
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            if (listProducts.SelectedItem is PRODUCTS selectedProduct)
-            {
-                // Проверка прав доступа через AppConnect
-            //    if (AppConnect.IsAdmin())
-            //    {
-            //        var result = MessageBox.Show($"Вы уверены, что хотите удалить товар '{selectedProduct.name}'?",
-            //            "Подтверждение удаления", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-            //        if (result == MessageBoxResult.Yes)
-            //        {
-            //            try
-            //            {
-            //                // Проверка на наличие товара в заказах
-            //                if (selectedProduct.ORDER_ITEMS.Any())
-            //                {
-            //                    MessageBox.Show("Невозможно удалить товар, так как он присутствует в одном или нескольких заказах.",
-            //                        "Ошибка удаления", MessageBoxButton.OK, MessageBoxImage.Error);
-            //                    return;
-            //                }
-
-            //                // Удаление товара
-            //                AppConnect.model01.PRODUCTS.Remove(selectedProduct);
-            //                AppConnect.model01.SaveChanges();
-
-            //                // Обновление списка
-            //                allProducts = AppConnect.model01.PRODUCTS.ToList();
-            //                UpdateProductList();
-            //                UpdateStatistics();
-
-            //                MessageBox.Show("Товар успешно удален", "Успех",
-            //                    MessageBoxButton.OK, MessageBoxImage.Information);
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                MessageBox.Show($"Ошибка удаления: {ex.Message}", "Ошибка",
-            //                    MessageBoxButton.OK, MessageBoxImage.Error);
-            //            }
-            //        }
-            //    }
-            //    else
-            //    {
-            //        MessageBox.Show("Только администратор может удалять товары",
-            //            "Ошибка доступа", MessageBoxButton.OK, MessageBoxImage.Warning);
-            //    }
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Выберите товар для удаления",
-            //        "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
+            // Удаление выполняется из ProductEditPage (только для админа) — здесь оставлено пустым
         }
 
         private void FilterCheckBox_Checked(object sender, RoutedEventArgs e)
@@ -359,7 +377,13 @@ namespace kanzeed.Pages
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // Дополнительная инициализация при загрузке
+            // Дополнительная инициализация при загрузке (если нужно подписаться здесь на NavigationService, можно сделать)
+            if (this.NavigationService != null)
+            {
+                // гарантируем, что подписка есть (на случай, если в конструкторе NavigationService был null)
+                this.NavigationService.Navigated -= NavigationService_Navigated;
+                this.NavigationService.Navigated += NavigationService_Navigated;
+            }
         }
 
         private void ViewUsersButton_Click(object sender, RoutedEventArgs e)
