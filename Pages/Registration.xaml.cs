@@ -281,16 +281,6 @@ namespace kanzeed.Pages
 
         #region Password reveal helpers (не меняют дизайн)
 
-        private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)
-        {
-            ToggleRevealForPasswordBox(PasswordBox, ref revealPasswordBox, TogglePasswordButton);
-        }
-
-        private void ToggleConfirmPasswordButton_Click(object sender, RoutedEventArgs e)
-        {
-            ToggleRevealForPasswordBox(ConfirmPasswordBox, ref revealConfirmPasswordBox, ToggleConfirmPasswordButton);
-        }
-
         private void ToggleRevealForPasswordBox(PasswordBox pwdBox, ref TextBox revealBox, Button toggleButton)
         {
             try

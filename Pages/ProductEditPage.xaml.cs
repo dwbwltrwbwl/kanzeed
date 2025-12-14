@@ -120,7 +120,7 @@ namespace kanzeed.Pages
                 {
                     // try relative to application folder
                     var appPath = AppDomain.CurrentDomain.BaseDirectory;
-                    var candidate = System.IO.Path.Combine(appPath, path);
+                    var candidate = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
                     if (File.Exists(candidate))
                     {
                         var bitmap = new BitmapImage();
@@ -144,42 +144,41 @@ namespace kanzeed.Pages
 
         private void ChooseImageButton_Click(object sender, RoutedEventArgs e)
         {
-            try
+            var dlg = new OpenFileDialog
             {
-                var dlg = new OpenFileDialog
-                {
-                    Filter = "Изображения|*.jpg;*.jpeg;*.png;*.bmp;*.gif|Все файлы|*.*",
-                    Title = "Выберите изображение товара"
-                };
+                Filter = "Изображения|*.jpg;*.jpeg;*.png;*.bmp;*.gif"
+            };
 
-                if (dlg.ShowDialog() == true)
-                {
-                    // Выбранный путь
-                    var selected = dlg.FileName;
+            if (dlg.ShowDialog() != true)
+                return;
 
-                    // По умолчанию сохраняем только имя файла (можно изменить логику сохранения)
-                    // Если хотите копировать файл в папку приложения — можно добавить копирование.
-                    var fileName = System.IO.Path.GetFileName(selected);
-                    ImagePathTextBox.Text = fileName;
+            string imagesDir = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory, "Images");
 
-                    // Попробуем загрузить превью прямо из выбранного файла
-                    TryLoadImageFromPath(selected);
+            if (!Directory.Exists(imagesDir))
+                Directory.CreateDirectory(imagesDir);
 
-                    // Если вы хотите копировать файл в папку приложения (например "Images"), раскомментируйте:
-                    /*
-                    var imagesDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
-                    if (!Directory.Exists(imagesDir)) Directory.CreateDirectory(imagesDir);
-                    var dest = System.IO.Path.Combine(imagesDir, fileName);
-                    File.Copy(selected, dest, true);
-                    ImagePathTextBox.Text = System.IO.Path.Combine("Images", fileName);
-                    TryLoadImageFromPath(dest);
-                    */
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка выбора изображения: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            string fileName =
+                Path.GetFileNameWithoutExtension(dlg.FileName)
+                + "_" + Guid.NewGuid().ToString("N").Substring(0, 6)
+                + Path.GetExtension(dlg.FileName);
+
+            string destPath = Path.Combine(imagesDir, fileName);
+            File.Copy(dlg.FileName, destPath, true);
+
+            string relativePath = Path.Combine("Images", fileName);
+
+            ImagePathTextBox.Text = relativePath;
+            ProductImage.Source = new BitmapImage(new Uri(destPath, UriKind.Absolute));
+        }
+
+        private void ClearImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            // очищаем путь
+            ImagePathTextBox.Text = string.Empty;
+
+            // убираем превью
+            ProductImage.Source = null;
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

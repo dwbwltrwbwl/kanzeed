@@ -123,7 +123,7 @@
     <Compile Include="ApplicationData\PAYMENT_METHODS.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
-    <Compile Include="ApplicationData\PriceToStyleConverter.cs" />
+    <Compile Include="Pages\PriceToStyleConverter.cs" />
     <Compile Include="ApplicationData\PRODUCTS.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
@@ -168,6 +168,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Pages\SimpleInputDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Pages\TablesPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -194,6 +198,9 @@
       <DependentUpon>Registration.xaml</DependentUpon>
     </Compile>
     <Compile Include="ApplicationData\RoleToVisibilityConverter.cs" />
+    <Compile Include="Pages\SimpleInputDialog.xaml.cs">
+      <DependentUpon>SimpleInputDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Pages\TablesPage.xaml.cs">
       <DependentUpon>TablesPage.xaml</DependentUpon>
     </Compile>
@@ -201,6 +208,7 @@
       <DependentUpon>UserProfilePage.xaml</DependentUpon>
     </Compile>
     <Compile Include="ApplicationData\UserSession.cs" />
+    <Compile Include="Pages\PriceToHighlightConverter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -246,6 +254,7 @@
       <DependentUpon>Model1.edmx</DependentUpon>
       <LastGenOutput>Model1.cs</LastGenOutput>
     </Content>
+    <Resource Include="Images\app.ico" />
     <Resource Include="Images\nofoto.png" />
     <Resource Include="Images\papkaA4.jpg" />
     <Resource Include="Images\ruchkaBlue.jpg" />

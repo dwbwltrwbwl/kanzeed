@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:kanzeed"
         mc:Ignorable="d"
         Title="КАНЦЕЕД" 
+        Icon="Images/app.ico"
         WindowState="Maximized" 
         WindowStartupLocation="CenterScreen">
 

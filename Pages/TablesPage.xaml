@@ -64,10 +64,38 @@
                           CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Extended"
                           RowHeight="30" />
 
-                <StackPanel Orientation="Horizontal" Grid.Row="2" HorizontalAlignment="Right" Margin="0,12,0,0">
-                    <Button x:Name="OpenInEditorBtn" Content="Открыть запись" Style="{StaticResource SecondaryButtonStyle}" Click="OpenInEditor_Click" Margin="0,0,8,0" />
-                    <Button x:Name="ExportCsvBtn" Content="Экспорт CSV" Style="{StaticResource SecondaryButtonStyle}" Click="ExportCsv_Click" Margin="0,0,8,0"/>
-                    <Button x:Name="BackBtn" Content="Назад" Style="{StaticResource SecondaryButtonStyle}" Click="BackBtn_Click"/>
+                <StackPanel Orientation="Horizontal"
+            Grid.Row="2"
+            HorizontalAlignment="Right"
+            Margin="0,12,0,0">
+
+                    <Button x:Name="AddBtn"
+            Content="Добавить"
+            Style="{StaticResource PrimaryButtonStyle}"
+            Click="AddBtn_Click"/>
+
+                    <Button x:Name="OpenInEditorBtn"
+            Content="Открыть запись"
+            Style="{StaticResource SecondaryButtonStyle}"
+            Click="OpenInEditor_Click"
+            Margin="8,0,0,0"/>
+
+                    <Button x:Name="DeleteBtn"
+            Content="Удалить"
+            Style="{StaticResource SecondaryButtonStyle}"
+            Click="DeleteBtn_Click"
+            Margin="8,0,0,0"/>
+
+                    <Button x:Name="ExportCsvBtn"
+            Content="Экспорт CSV"
+            Style="{StaticResource SecondaryButtonStyle}"
+            Click="ExportCsv_Click"
+            Margin="8,0,0,0"/>
+
+                    <Button x:Name="BackBtn"
+            Content="Назад"
+            Style="{StaticResource SecondaryButtonStyle}"
+            Click="BackBtn_Click"/>
                 </StackPanel>
             </Grid>
         </Border>

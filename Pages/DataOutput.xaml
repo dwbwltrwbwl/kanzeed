@@ -50,7 +50,8 @@
 
         <!-- Конвертер -->
         <local:RoleToVisibilityConverter x:Key="RoleToVisibilityConverter"/>
-        
+        <local:PriceGreaterThan1000Converter x:Key="PriceGreaterThan1000Converter"/>
+
     </Page.Resources>
 
     <Grid>
@@ -114,6 +115,17 @@
                                         <TextBlock Text="Пользователь" FontSize="12" FontWeight="Medium"/>
                                         <TextBlock Text="Личный кабинет" FontSize="10" Foreground="#666666"/>
                                     </StackPanel>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="10,0,0,0"
+                            Padding="10,0"
+                            Click="LogoutButton_Click"
+                            Visibility="{Binding Source={x:Static data:AppData.CurrentUser},
+                             Converter={StaticResource RoleToVisibilityConverter},
+                             ConverterParameter=Logout}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Выйти"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
@@ -189,7 +201,25 @@
           VerticalAlignment="Stretch">
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Margin="0,5" Padding="15" CornerRadius="8" BorderThickness="1" BorderBrush="#EEEEEE">
+                                    <Border Margin="0,5"
+        Padding="15"
+        CornerRadius="8"
+        BorderThickness="1"
+        BorderBrush="#EEEEEE">
+
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="White"/>
+
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding price, Converter={StaticResource PriceGreaterThan1000Converter}}"
+                             Value="True">
+                                                        <Setter Property="Background" Value="#FFF4E5"/>
+                                                        <Setter Property="BorderBrush" Value="#FF9800"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
                                         <Grid Height="110">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="100"/>
@@ -212,8 +242,33 @@
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding price, StringFormat={}{0} ₽}" FontSize="16" FontWeight="Bold" Foreground="#333333"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding price, StringFormat={}{0} ₽}"
+                   FontSize="16"
+                   FontWeight="Bold"/>
+
+                                                    <TextBlock Text=" 🔥"
+           Foreground="#FF9800"
+           FontSize="14">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding price}" Value="1000">
+                                                                        <!-- НЕ используем, просто пример -->
+                                                                    </DataTrigger>
+
+                                                                    <DataTrigger Binding="{Binding price, Converter={StaticResource PriceGreaterThan1000Converter}}"
+                             Value="True">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </StackPanel>
                                             </StackPanel>
+
 
                                             <StackPanel Grid.Column="3" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding stock_quantity, StringFormat={}На складе: {0}}" FontSize="13" Foreground="#333333" HorizontalAlignment="Center"/>

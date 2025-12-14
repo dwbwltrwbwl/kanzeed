@@ -11,7 +11,9 @@ namespace kanzeed.ApplicationData
 {
     using System;
     using System.Collections.Generic;
-    
+    using System.IO;
+    using System.Windows.Media.Imaging;
+
     public partial class PRODUCTS
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
@@ -19,14 +21,36 @@ namespace kanzeed.ApplicationData
         {
             this.ORDER_ITEMS = new HashSet<ORDER_ITEMS>();
         }
-        public string CurrentPhoto
+        public BitmapImage CurrentPhoto
         {
             get
             {
-                if (String.IsNullOrEmpty(image) || String.IsNullOrWhiteSpace(image))
-                    return @"\Images\nofoto.png";
-                else
-                    return @"\Images\" + image;
+                try
+                {
+                    string relativePath = string.IsNullOrWhiteSpace(image)
+                        ? Path.Combine("Images", "nofoto.png")
+                        : image;
+
+                    string fullPath = Path.Combine(
+                        AppDomain.CurrentDomain.BaseDirectory,
+                        relativePath
+                    );
+
+                    if (!File.Exists(fullPath))
+                        return null;
+
+                    var bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.UriSource = new Uri(fullPath, UriKind.Absolute);
+                    bmp.EndInit();
+
+                    return bmp;
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
         public int product_id { get; set; }

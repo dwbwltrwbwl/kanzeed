@@ -340,8 +340,73 @@ namespace kanzeed.Pages
 
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            // Удаление выполняется из ProductEditPage (только для админа) — здесь оставлено пустым
+            var product = listProducts.SelectedItem as PRODUCTS;
+            if (product == null)
+            {
+                MessageBox.Show("Выберите товар для удаления",
+                    "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Только администратор
+            if (AppData.CurrentUser == null || AppData.CurrentUser.RoleId != 4)
+            {
+                MessageBox.Show("Удаление товаров доступно только администратору",
+                    "Доступ запрещён", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Вы действительно хотите удалить товар «{product.name}»?",
+                "Подтверждение удаления",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                var trackedProduct = AppConnect.model01.PRODUCTS
+                    .FirstOrDefault(p => p.product_id == product.product_id);
+
+                if (trackedProduct == null)
+                {
+                    MessageBox.Show("Товар не найден в базе данных",
+                        "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Проверка: используется ли товар в заказах
+                bool usedInOrders = AppConnect.model01.ORDER_ITEMS
+                    .Any(oi => oi.product_id == trackedProduct.product_id);
+
+                if (usedInOrders)
+                {
+                    MessageBox.Show(
+                        "Нельзя удалить товар, так как он используется в заказах",
+                        "Удаление запрещено",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                AppConnect.model01.PRODUCTS.Remove(trackedProduct);
+                AppConnect.model01.SaveChanges();
+
+                ReloadProducts();
+
+                MessageBox.Show("Товар успешно удалён",
+                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка удаления товара: {ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
+
 
         private void FilterCheckBox_Checked(object sender, RoutedEventArgs e)
         {
@@ -373,6 +438,15 @@ namespace kanzeed.Pages
             {
                 NavigationService.Navigate(new UserProfilePage());
             }
+        }
+        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Очистка пользователя и корзины
+            AppData.CurrentUser = null;
+            AppData.CurrentCart?.Clear();
+
+            // Переход на страницу авторизации
+            NavigationService.Navigate(new Authorization());
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)

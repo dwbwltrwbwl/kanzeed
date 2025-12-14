@@ -60,35 +60,44 @@ namespace kanzeed.Pages
 
             switch (action)
             {
-                // Показывать каталог/основные элементы только для авторизованных пользователей (roleId >= 1)
+                // Основной каталог — только авторизованные
                 case "ViewCatalog":
                 case "Search":
                 case "Filters":
                     return roleId >= 1 ? Visibility.Visible : Visibility.Collapsed;
 
-                // Корзина и добавление в корзину — только Клиент (roleId == 1) и выше (включая менеджера/админа, если хотите)
+                // Корзина — ТОЛЬКО клиент
                 case "Cart":
                 case "AddToCart":
-                case "ViewOrders": // просмотр своих заказов
-                    // Если хотите, чтобы только реальные клиенты (не курьеры) имели корзину:
-                    return (roleId == 1) ? Visibility.Visible : Visibility.Collapsed;
+                case "ViewOrders":
+                    return roleId == 1 ? Visibility.Visible : Visibility.Collapsed;
 
-                // Менеджерские функции (менеджер или админ)
+                // Менеджер и админ
                 case "ViewTables":
                 case "EditProduct":
                 case "AddProduct":
-                    return (roleId == 2 || roleId == 4) ? Visibility.Visible : Visibility.Collapsed;
+                    return roleId == 2 || roleId == 4
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
 
-                // Управление пользователями и удаление — только админ
+                // Только админ
                 case "ManageUsers":
                 case "DeleteProduct":
                 case "DeleteAny":
-                    return roleId == 4 ? Visibility.Visible : Visibility.Collapsed;
+                    return roleId == 4
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
 
-                // По умолчанию скрываем
+                // 🔴 ВОТ ЭТОГО НЕ ХВАТАЛО
+                case "Logout":
+                    return roleId >= 1
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+
                 default:
                     return Visibility.Collapsed;
             }
+
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
