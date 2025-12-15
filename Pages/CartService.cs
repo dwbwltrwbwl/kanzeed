@@ -9,7 +9,6 @@ namespace kanzeed.Services
 {
     public static class CartService
     {
-        // Добавить товар в корзину (увеличить количество)
         public static void AddToCart(int productId, int quantity = 1)
         {
             if (AppData.CurrentUser == null || AppData.CurrentUser.RoleId != 1)
