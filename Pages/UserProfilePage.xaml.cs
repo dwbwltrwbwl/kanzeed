@@ -14,28 +14,66 @@ namespace kanzeed.Pages
         public UserProfilePage()
         {
             InitializeComponent();
+            LoadCities();
             ReloadProfile();
+        }
+        private void LoadCities()
+        {
+            CityComboBox.ItemsSource = AppConnect.model01.CITIES
+                .OrderBy(c => c.city_name)
+                .ToList();
         }
 
         private void ReloadProfile()
         {
             var user = AppData.CurrentUser;
-            var cust = AppConnect.model01.CUSTOMERS.First(c => c.customer_id == user.Id);
+            if (user == null) return;
 
-            LastNameBox.Text = cust.last_name;
-            FirstNameBox.Text = cust.first_name;
-            MiddleNameBox.Text = cust.middle_name;
-            EmailBox.Text = cust.email;
-            PhoneBox.Text = FormatPhone(cust.phone ?? "");
+            if (user.IsEmployee)
+            {
+                // ===== СОТРУДНИК =====
+                var emp = AppConnect.model01.EMPLOYEES
+                    .FirstOrDefault(e => e.employee_id == user.Id);
 
-            OrdersList.ItemsSource = AppConnect.model01.ORDERS
-                .Where(o => o.customer_id == cust.customer_id)
-                .OrderByDescending(o => o.order_date)
-                .ToList();
+                if (emp == null) return;
 
-            AddressesList.ItemsSource = AppConnect.model01.CUSTOMER_ADDRESSES
-                .Where(a => a.customer_id == cust.customer_id)
-                .ToList();
+                RoleInfoText.Text = "Должность: сотрудник";
+
+                LastNameBox.Text = emp.last_name;
+                FirstNameBox.Text = emp.first_name;
+                MiddleNameBox.Text = emp.middle_name;
+                EmailBox.Text = emp.email;
+                PhoneBox.Text = FormatPhone(emp.phone ?? "");
+
+                // вкладки, которые не нужны сотруднику
+                OrdersList.ItemsSource = null;
+                AddressesList.ItemsSource = null;
+            }
+            else
+            {
+                // ===== КЛИЕНТ =====
+                var cust = AppConnect.model01.CUSTOMERS
+                    .FirstOrDefault(c => c.customer_id == user.Id);
+
+                if (cust == null) return;
+
+                RoleInfoText.Text = "Должность: клиент";
+
+                LastNameBox.Text = cust.last_name;
+                FirstNameBox.Text = cust.first_name;
+                MiddleNameBox.Text = cust.middle_name;
+                EmailBox.Text = cust.email;
+                PhoneBox.Text = FormatPhone(cust.phone ?? "");
+
+                OrdersList.ItemsSource = AppConnect.model01.ORDERS
+                    .Where(o => o.customer_id == cust.customer_id)
+                    .OrderByDescending(o => o.order_date)
+                    .ToList();
+
+                AddressesList.ItemsSource = AppConnect.model01.CUSTOMER_ADDRESSES
+                    .Where(a => a.customer_id == cust.customer_id)
+                    .ToList();
+            }
         }
 
         private void SaveProfile_Click(object sender, RoutedEventArgs e)
@@ -224,14 +262,22 @@ namespace kanzeed.Pages
 
             try
             {
+                if (CityComboBox.SelectedItem == null)
+                {
+                    MessageBox.Show("Выберите город");
+                    return;
+                }
+
                 var address = new CUSTOMER_ADDRESSES
                 {
                     customer_id = user.Id,
-                    city = CityBox.Text.Trim(),
+                    city_id = (int)CityComboBox.SelectedValue,
                     postal_code = PostalCodeBox.Text.Trim(),
                     street = StreetBox.Text.Trim(),
                     house = int.Parse(HouseBox.Text),
-                    floor = string.IsNullOrWhiteSpace(FloorBox.Text) ? (int?)null : int.Parse(FloorBox.Text),
+                    floor = string.IsNullOrWhiteSpace(FloorBox.Text)
+                        ? (int?)null
+                        : int.Parse(FloorBox.Text),
                     apartment = int.Parse(ApartmentBox.Text),
                     porch = int.Parse(PorchBox.Text)
                 };

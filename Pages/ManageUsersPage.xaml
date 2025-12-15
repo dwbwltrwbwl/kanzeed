@@ -56,7 +56,6 @@
                 </Grid>
             </Border>
 
-            <Button Style="{StaticResource PrimaryButtonStyle}" Click="RefreshButton_Click" Margin="12,0,0,0">Обновить</Button>
             <Button Style="{StaticResource SecondaryButtonStyle}" Click="BackButton_Click">Назад</Button>
         </StackPanel>
 

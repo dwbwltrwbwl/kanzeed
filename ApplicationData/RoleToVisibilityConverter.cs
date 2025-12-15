@@ -64,7 +64,7 @@ namespace kanzeed.Pages
                 case "ViewCatalog":
                 case "Search":
                 case "Filters":
-                    return roleId >= 1 ? Visibility.Visible : Visibility.Collapsed;
+                    return Visibility.Visible;
 
                 // Корзина — ТОЛЬКО клиент
                 case "Cart":
@@ -85,6 +85,11 @@ namespace kanzeed.Pages
                 case "DeleteProduct":
                 case "DeleteAny":
                     return roleId == 4
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
+
+                case "GuestOnly":
+                    return roleId == 0
                         ? Visibility.Visible
                         : Visibility.Collapsed;
 

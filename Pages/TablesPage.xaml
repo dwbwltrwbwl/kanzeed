@@ -38,13 +38,26 @@
         <StackPanel Grid.Column="0" Margin="0,0,12,0">
             <TextBlock Text="Таблицы" FontSize="18" FontWeight="Bold" Margin="4,0,0,8"/>
             <ListBox x:Name="TablesList" Height="520" SelectionChanged="TablesList_SelectionChanged"/>
-            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                <Button Content="Обновить список" Style="{StaticResource SecondaryButtonStyle}" Click="RefreshTables_Click"/>
-                <Button Content="Обновить данные" Style="{StaticResource PrimaryButtonStyle}" Click="RefreshData_Click" Margin="8,0,0,0"/>
+
+            <!-- Кнопки в колонку одинаковой ширины -->
+            <StackPanel Margin="0,10,0,0">
+                <!--<Button Content="Обновить список" 
+                Style="{StaticResource SecondaryButtonStyle}" 
+                Click="RefreshTables_Click"
+                Margin="0,0,0,6"
+                HorizontalAlignment="Stretch"/>-->
+                <!-- Растянуть -->
+
+                <!--<Button Content="Обновить данные" 
+                Style="{StaticResource PrimaryButtonStyle}" 
+                Click="RefreshData_Click"
+                HorizontalAlignment="Stretch"/>-->
+                <!-- Растянуть -->
             </StackPanel>
 
             <TextBlock Text="Примечание:" FontSize="12" Foreground="#666" Margin="0,12,0,4"/>
-            <TextBlock Text="Менеджер и админ могут просматривать таблицы. Пользователи скрыты." FontSize="12" TextWrapping="Wrap" Foreground="#888"/>
+            <TextBlock Text="Менеджер и админ могут просматривать таблицы. Пользователи скрыты." 
+               FontSize="12" TextWrapping="Wrap" Foreground="#888"/>
         </StackPanel>
 
         <Border Grid.Column="1" Background="White" CornerRadius="8" Padding="12" BorderBrush="#EEEEEE" BorderThickness="1">
@@ -74,23 +87,26 @@
             Style="{StaticResource PrimaryButtonStyle}"
             Click="AddBtn_Click"/>
 
+            <Button Content="Изменить статус"
+            Style="{StaticResource SecondaryButtonStyle}"
+            Click="ChangeOrderStatus_Click"/>
+
+
                     <Button x:Name="OpenInEditorBtn"
             Content="Открыть запись"
             Style="{StaticResource SecondaryButtonStyle}"
-            Click="OpenInEditor_Click"
-            Margin="8,0,0,0"/>
+            Click="OpenInEditor_Click"/>
 
                     <Button x:Name="DeleteBtn"
             Content="Удалить"
             Style="{StaticResource SecondaryButtonStyle}"
-            Click="DeleteBtn_Click"
-            Margin="8,0,0,0"/>
+            Click="DeleteBtn_Click"/>
 
-                    <Button x:Name="ExportCsvBtn"
+                    <!--<Button x:Name="ExportCsvBtn"
             Content="Экспорт CSV"
             Style="{StaticResource SecondaryButtonStyle}"
             Click="ExportCsv_Click"
-            Margin="8,0,0,0"/>
+            Margin="8,0,0,0"/>-->
 
                     <Button x:Name="BackBtn"
             Content="Назад"

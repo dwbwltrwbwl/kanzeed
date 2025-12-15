@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -17,8 +18,6 @@ namespace kanzeed.Pages
         // Список ролей для ComboBox (role_id, role_name)
         public ObservableCollection<ROLES> RolesList { get; set; } = new ObservableCollection<ROLES>();
 
-        private CollectionViewSource usersViewSource;
-
         public ManageUsersPage()
         {
             InitializeComponent();
@@ -33,10 +32,6 @@ namespace kanzeed.Pages
                 NavigationService.Navigate(new Authorization());
                 return;
             }
-
-            usersViewSource = new CollectionViewSource();
-            usersViewSource.Source = Users;
-            UsersGrid.ItemsSource = usersViewSource.View;
 
             LoadRoles();
             LoadUsers();
@@ -57,7 +52,7 @@ namespace kanzeed.Pages
         {
             Users.Clear();
 
-            // Загрузка клиентов
+            // Загрузка клиентов (обычно роли 1-3)
             var customers = AppConnect.model01.CUSTOMERS.ToList();
             foreach (var c in customers)
             {
@@ -71,11 +66,13 @@ namespace kanzeed.Pages
                     MiddleName = c.middle_name,
                     Email = c.email,
                     RoleId = c.id_role,
-                    RoleName = role?.role_name ?? ""
+                    RoleName = role?.role_name ?? "",
+                    PreviousRoleId = c.id_role,
+                    PreviousIsEmployee = false
                 });
             }
 
-            // Загрузка сотрудников
+            // Загрузка сотрудников (роли 4-5)
             var employees = AppConnect.model01.EMPLOYEES.ToList();
             foreach (var emp in employees)
             {
@@ -89,11 +86,13 @@ namespace kanzeed.Pages
                     MiddleName = emp.middle_name,
                     Email = emp.email,
                     RoleId = emp.id_role,
-                    RoleName = role?.role_name ?? ""
+                    RoleName = role?.role_name ?? "",
+                    PreviousRoleId = emp.id_role,
+                    PreviousIsEmployee = true
                 });
             }
 
-            usersViewSource.View.Refresh();
+            UsersGrid.ItemsSource = Users;
         }
 
         // Поиск
@@ -101,24 +100,30 @@ namespace kanzeed.Pages
         {
             string q = SearchBox.Text?.Trim().ToLower() ?? "";
 
-            usersViewSource.View.Filter = obj =>
+            if (string.IsNullOrEmpty(q))
             {
-                if (!(obj is UserViewModel uv)) return false;
-                if (string.IsNullOrEmpty(q)) return true;
-                if (uv.FullName != null && uv.FullName.ToLower().Contains(q)) return true;
-                if (uv.Email != null && uv.Email.ToLower().Contains(q)) return true;
-                if (uv.Id.ToString().Contains(q)) return true;
-                return false;
-            };
+                UsersGrid.ItemsSource = Users;
+                return;
+            }
+
+            var filtered = Users.Where(uv =>
+                uv.FullName != null && uv.FullName.ToLower().Contains(q) ||
+                uv.Email != null && uv.Email.ToLower().Contains(q) ||
+                uv.Id.ToString().Contains(q)).ToList();
+
+            UsersGrid.ItemsSource = filtered;
         }
 
-        // Сохранить роль для конкретного пользователя (кнопка Save)
+        // Сохранить роль для конкретного пользователя
+        // Сохранить роль для конкретного пользователя
+        // Сохранить роль для конкретного пользователя
         private void SaveRole_Click(object sender, RoutedEventArgs e)
         {
             if (!(sender is Button btn) || !(btn.Tag is UserViewModel uv)) return;
 
             try
             {
+                // Просто обновляем роль в текущей таблице
                 if (uv.IsEmployee)
                 {
                     var emp = AppConnect.model01.EMPLOYEES
@@ -126,7 +131,6 @@ namespace kanzeed.Pages
                     if (emp != null)
                     {
                         emp.id_role = uv.RoleId;
-                        AppConnect.model01.SaveChanges();
                     }
                 }
                 else
@@ -136,23 +140,58 @@ namespace kanzeed.Pages
                     if (cust != null)
                     {
                         cust.id_role = uv.RoleId;
-                        AppConnect.model01.SaveChanges();
                     }
                 }
 
-                // Обновить отображаемое имя роли
+                // Сохраняем с обработкой ошибок валидации
+                AppConnect.model01.SaveChanges();
+
+                // Обновляем отображаемое имя роли
                 var role = AppConnect.model01.ROLES.FirstOrDefault(r => r.role_id == uv.RoleId);
                 uv.RoleName = role?.role_name ?? "";
-                MessageBox.Show("Роль сохранена", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                usersViewSource.View.Refresh();
+
+                MessageBox.Show("Роль успешно сохранена", "Успех",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (System.Data.Entity.Validation.DbEntityValidationException ex)
+            {
+                // Обработка ошибок валидации Entity Framework
+                var errorMessages = new List<string>();
+                foreach (var validationResult in ex.EntityValidationErrors)
+                {
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        errorMessages.Add($"Property: {error.PropertyName} - Error: {error.ErrorMessage}");
+                    }
+                }
+
+                string fullErrorMessage = string.Join("\n", errorMessages);
+                MessageBox.Show($"Ошибка валидации:\n{fullErrorMessage}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при сохранении роли: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Ошибка при сохранении роли: {ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        // Открыть страницу профиля (перейти в UserProfilePage для выбранного пользователя, если нужно)
+        // Вспомогательный метод для безопасного получения свойства
+        private object GetPropertyIfExists(object obj, string propertyName)
+        {
+            var prop = obj.GetType().GetProperty(propertyName);
+            return prop?.GetValue(obj);
+        }
+
+        // Метод для определения, является ли роль "сотруднической"
+        private bool IsEmployeeRole(int roleId)
+        {
+            // Предположим, что роли 4-5 - для сотрудников, 1-3 - для клиентов
+            // Настройте это в соответствии с вашей структурой ролей
+            return roleId >= 4; // или другая логика
+        }
+
+        // Открыть страницу профиля
         private void OpenProfile_Click(object sender, RoutedEventArgs e)
         {
             if (!(sender is Button btn) || !(btn.Tag is UserViewModel uv)) return;
@@ -164,9 +203,8 @@ namespace kanzeed.Pages
             }
             else
             {
-                // Покажем диалог с базовой информацией
-                MessageBox.Show($"ID: {uv.Id}\nИмя: {uv.FullName}\nEmail: {uv.Email}\nРоль: {uv.RoleName}\nСотрудник: {uv.IsEmployee}",
-                    "Пользователь", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"ID: {uv.Id}\nИмя: {uv.FullName}\nEmail: {uv.Email}\nРоль: {uv.RoleName}\nТип: {(uv.IsEmployee ? "Сотрудник" : "Клиент")}",
+                    "Информация о пользователе", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
@@ -179,50 +217,6 @@ namespace kanzeed.Pages
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             NavigationService.GoBack();
-        }
-
-        #region INotifyPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        #endregion
-    }
-
-    // ViewModel для общих пользователей (клиент / сотрудник)
-    public class UserViewModel : INotifyPropertyChanged
-    {
-        public int Id { get; set; }
-        public bool IsEmployee { get; set; }
-
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string MiddleName { get; set; }
-
-        public string FullName => $"{LastName} {FirstName} {MiddleName}".Trim();
-
-        public string Email { get; set; }
-
-        private int _roleId;
-        public int RoleId
-        {
-            get => _roleId;
-            set
-            {
-                if (_roleId == value) return;
-                _roleId = value;
-                OnPropertyChanged(nameof(RoleId));
-            }
-        }
-
-        private string _roleName;
-        public string RoleName
-        {
-            get => _roleName;
-            set
-            {
-                if (_roleName == value) return;
-                _roleName = value;
-                OnPropertyChanged(nameof(RoleName));
-            }
         }
 
         #region INotifyPropertyChanged

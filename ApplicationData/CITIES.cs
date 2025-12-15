@@ -12,27 +12,18 @@ namespace kanzeed.ApplicationData
     using System;
     using System.Collections.Generic;
     
-    public partial class CUSTOMER_ADDRESSES
+    public partial class CITIES
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-        public CUSTOMER_ADDRESSES()
+        public CITIES()
         {
-            this.DELIVERIES = new HashSet<DELIVERIES>();
+            this.CUSTOMER_ADDRESSES = new HashSet<CUSTOMER_ADDRESSES>();
         }
     
-        public int address_id { get; set; }
-        public int customer_id { get; set; }
         public int city_id { get; set; }
-        public string postal_code { get; set; }
-        public string street { get; set; }
-        public int house { get; set; }
-        public Nullable<int> floor { get; set; }
-        public Nullable<int> apartment { get; set; }
-        public Nullable<int> porch { get; set; }
+        public string city_name { get; set; }
     
-        public virtual CUSTOMERS CUSTOMERS { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<DELIVERIES> DELIVERIES { get; set; }
-        public virtual CITIES CITIES { get; set; }
+        public virtual ICollection<CUSTOMER_ADDRESSES> CUSTOMER_ADDRESSES { get; set; }
     }
 }

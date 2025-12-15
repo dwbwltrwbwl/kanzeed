@@ -168,9 +168,41 @@
                     <TextBlock Text="Доп. настройки" FontSize="13" FontWeight="SemiBold" Foreground="#333" Margin="0,16,0,8"/>
 
                     <StackPanel>
-                        <CheckBox x:Name="IsDiscountedCheckBox" Content="Есть скидка" Foreground="#666"/>
-                        <CheckBox x:Name="IsHiddenCheckBox" Content="Скрыть товар" Foreground="#666"/>
+
+                        <CheckBox x:Name="IsDiscountedCheckBox"
+              Content="Есть скидка"
+              Foreground="#666"
+              Checked="IsDiscountedCheckBox_Checked"
+              Unchecked="IsDiscountedCheckBox_Unchecked"/>
+
+                        <!-- Процент скидки -->
+                        <StackPanel x:Name="DiscountPanel"
+                Margin="0,8,0,0"
+                Visibility="Collapsed">
+
+                            <TextBlock Text="Процент скидки (%)"
+                   FontSize="13"
+                   Foreground="#444"
+                   Margin="0,0,0,4"/>
+
+                            <Border CornerRadius="8"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                Background="#F8F9FA"
+                Height="44">
+
+                                <TextBox x:Name="DiscountTextBox"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Padding="12,0"
+                     FontSize="14"
+                     MaxLength="5"/>
+                            </Border>
+
+                        </StackPanel>
+
                     </StackPanel>
+
 
                 </StackPanel>
 

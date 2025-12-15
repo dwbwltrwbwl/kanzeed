@@ -4,20 +4,21 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="373fe8b168514b13bee0e4ccf7e43e7d" Name="Diagram1" ZoomLevel="64">
-        <EntityTypeShape EntityType="kanzeedModel.CATEGORIES" Width="1.5" PointX="6" PointY="13.25" IsExpanded="true" />
+      <Diagram DiagramId="5795c45dd4584aca83cdce31bfb284e6" Name="Diagram1" ZoomLevel="72">
+        <EntityTypeShape EntityType="kanzeedModel.CATEGORIES" Width="1.5" PointX="6" PointY="12.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="kanzeedModel.CITIES" Width="1.5" PointX="0.75" PointY="1.25" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.CUSTOMER_ADDRESSES" Width="1.5" PointX="5.25" PointY="3.875" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.CUSTOMERS" Width="1.5" PointX="3" PointY="3.875" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.DELIVERIES" Width="1.5" PointX="7.5" PointY="5.625" IsExpanded="true" />
-        <EntityTypeShape EntityType="kanzeedModel.DELIVERY_METHODS" Width="1.5" PointX="5.25" PointY="18.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="kanzeedModel.DELIVERY_METHODS" Width="1.5" PointX="5.25" PointY="17.5" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.EMPLOYEES" Width="1.5" PointX="3" PointY="7.75" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.ORDER_ITEMS" Width="1.5" PointX="10.5" PointY="1.375" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.ORDER_STATUSES" Width="1.5" PointX="6" PointY="0.75" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.ORDERS" Width="1.5" PointX="8.25" PointY="0.875" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.PAYMENT_METHODS" Width="1.5" PointX="6" PointY="10.125" IsExpanded="true" />
-        <EntityTypeShape EntityType="kanzeedModel.PRODUCTS" Width="1.5" PointX="8.25" PointY="13.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="kanzeedModel.PRODUCTS" Width="1.5" PointX="8.25" PointY="12.75" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.ROLES" Width="1.5" PointX="0.75" PointY="6.375" IsExpanded="true" />
-        <EntityTypeShape EntityType="kanzeedModel.SUPPLIERS" Width="1.5" PointX="6" PointY="15.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="kanzeedModel.SUPPLIERS" Width="1.5" PointX="6" PointY="14.875" IsExpanded="true" />
         <EntityTypeShape EntityType="kanzeedModel.sysdiagrams" Width="1.5" PointX="9.75" PointY="5.25" IsExpanded="true" />
         <AssociationConnector Association="kanzeedModel.FK_Products_Categories" ManuallyRouted="false" />
         <AssociationConnector Association="kanzeedModel.FK_Addresses_Customers" ManuallyRouted="false" />
@@ -33,6 +34,7 @@
         <AssociationConnector Association="kanzeedModel.FK_Orders_Statuses" ManuallyRouted="false" />
         <AssociationConnector Association="kanzeedModel.FK_Orders_PaymentMethods" ManuallyRouted="false" />
         <AssociationConnector Association="kanzeedModel.FK_Products_Suppliers" ManuallyRouted="false" />
+        <AssociationConnector Association="kanzeedModel.FK_CUSTOMER_ADDRESSES_CITIES" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

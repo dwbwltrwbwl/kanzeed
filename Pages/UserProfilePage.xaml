@@ -51,6 +51,12 @@
                     <StackPanel Grid.Column="0" Margin="0,0,20,0">
                         <TextBlock Text="Личные данные" FontWeight="Bold"/>
 
+                        <TextBlock x:Name="RoleInfoText" 
+                           Text="Должность: " 
+                           FontSize="13" 
+                           Foreground="#666" 
+                           Margin="0,5,0,15"/>
+
                         <TextBlock Text="Фамилия"/>
                         <TextBox x:Name="LastNameBox"/>
 
@@ -118,7 +124,7 @@
                                     <ListView.ItemTemplate>
                                         <DataTemplate>
                                             <DockPanel Margin="0,4">
-                                                <TextBlock Text="{Binding city}" Width="90"/>
+                                                <TextBlock Text="{Binding CITIES.city_name}" Width="90"/>
                                                 <TextBlock Text="{Binding street}" Width="140" Margin="10,0,0,0"/>
                                                 <Button Content="✖"
                                 DockPanel.Dock="Right"
@@ -135,25 +141,29 @@
                    Margin="0,10,0,8"/>
 
                                 <TextBlock Text="Город"/>
-                                <TextBox x:Name="CityBox"/>
+                                <ComboBox x:Name="CityComboBox"
+          DisplayMemberPath="city_name"
+          SelectedValuePath="city_id"
+          Height="18"/>
+
 
                                 <TextBlock Text="Почтовый индекс"/>
-                                <TextBox x:Name="PostalCodeBox"/>
+                                <TextBox x:Name="PostalCodeBox" MaxLength="7"/>
 
                                 <TextBlock Text="Улица"/>
-                                <TextBox x:Name="StreetBox"/>
+                                <TextBox x:Name="StreetBox" MaxLength="50"/>
 
                                 <TextBlock Text="Дом"/>
-                                <TextBox x:Name="HouseBox"/>
+                                <TextBox x:Name="HouseBox" MaxLength="5"/>
 
                                 <TextBlock Text="Этаж (необязательно)"/>
-                                <TextBox x:Name="FloorBox"/>
+                                <TextBox x:Name="FloorBox" MaxLength="3"/>
 
                                 <TextBlock Text="Квартира (необязательно)"/>
-                                <TextBox x:Name="ApartmentBox"/>
+                                <TextBox x:Name="ApartmentBox" MaxLength="5"/>
 
                                 <TextBlock Text="Подъезд (необязательно)"/>
-                                <TextBox x:Name="PorchBox"/>
+                                <TextBox x:Name="PorchBox" MaxLength="5"/>
 
                                 <Button Content="Добавить адрес"
                 Style="{StaticResource PrimaryButtonStyle}"

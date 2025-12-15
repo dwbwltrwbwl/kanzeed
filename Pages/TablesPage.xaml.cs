@@ -34,6 +34,7 @@ namespace kanzeed.Pages
                 "ORDER_ITEMS",
                 "DELIVERIES",
                 "CUSTOMER_ADDRESSES",
+                "CITIES",
                 "SUPPLIERS",
                 "PAYMENT_METHODS",
                 "DELIVERY_METHODS",
@@ -131,12 +132,27 @@ namespace kanzeed.Pages
                         .Select(a => new
                         {
                             ID = a.address_id,
-                            Клиент = a.CUSTOMERS.last_name,
-                            Город = a.city,
+                            Клиент = a.CUSTOMERS.last_name + " " + a.CUSTOMERS.first_name,
+                            Город = a.CITIES.city_name,
                             Улица = a.street,
-                            Дом = a.house
-                        }).ToList();
-                    break;
+                            Дом = a.house,
+                            Квартира = a.apartment,
+                            Этаж = a.floor,
+                            Подъезд = a.porch,
+                            Индекс = a.postal_code
+                        })
+                        .ToList();
+                break;
+
+                case "CITIES":
+                    TableDataGrid.ItemsSource = AppConnect.model01.CITIES
+                        .Select(c => new
+                        {
+                            ID = c.city_id,
+                            Город = c.city_name
+                        })
+                        .ToList();
+                break;
 
                 case "SUPPLIERS":
                     TableDataGrid.ItemsSource = AppConnect.model01.SUPPLIERS
@@ -181,55 +197,70 @@ namespace kanzeed.Pages
         {
             if (AppData.CurrentUser == null || AppData.CurrentUser.RoleId < 2)
             {
-                MessageBox.Show("Недостаточно прав для добавления",
+                MessageBox.Show("Недостаточно прав",
                     "Доступ запрещён", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            // 🔴 СРАЗУ проверяем — можно ли добавлять
-            bool canAdd =
-                currentTable == "CATEGORIES" ||
-                currentTable == "SUPPLIERS" ||
-                currentTable == "PAYMENT_METHODS" ||
-                currentTable == "DELIVERY_METHODS" ||
-                currentTable == "ORDER_STATUSES";
-
-            if (!canAdd)
-            {
-                MessageBox.Show(
-                    $"Добавление запрещено для таблицы {currentTable}",
-                    "Операция недоступна",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-                return;
-            }
-
-            // ✅ Только теперь показываем окно ввода
-            string value = Prompt("Добавление", "Введите значение:");
-            if (string.IsNullOrWhiteSpace(value))
-                return;
-
             switch (currentTable)
             {
+                // ===== ПРОСТЫЕ СПРАВОЧНИКИ =====
                 case "CATEGORIES":
-                    AppConnect.model01.CATEGORIES.Add(new CATEGORIES { name = value });
+                    AddSimple("Введите название категории",
+                        v => AppConnect.model01.CATEGORIES.Add(new CATEGORIES { name = v }));
                     break;
 
                 case "SUPPLIERS":
-                    AppConnect.model01.SUPPLIERS.Add(new SUPPLIERS { name = value });
+                    AddSimple("Введите название поставщика",
+                        v => AppConnect.model01.SUPPLIERS.Add(new SUPPLIERS { name = v }));
+                    break;
+
+                case "CITIES":
+                    AddSimple("Введите название города",
+                        v => AppConnect.model01.CITIES.Add(new CITIES { city_name = v }));
                     break;
 
                 case "PAYMENT_METHODS":
-                    AppConnect.model01.PAYMENT_METHODS.Add(new PAYMENT_METHODS { method_name = value });
+                    AddSimple("Введите способ оплаты",
+                        v => AppConnect.model01.PAYMENT_METHODS.Add(new PAYMENT_METHODS { method_name = v }));
                     break;
 
                 case "DELIVERY_METHODS":
-                    AppConnect.model01.DELIVERY_METHODS.Add(new DELIVERY_METHODS { method_name = value });
+                    AddSimple("Введите способ доставки",
+                        v => AppConnect.model01.DELIVERY_METHODS.Add(new DELIVERY_METHODS { method_name = v }));
                     break;
 
                 case "ORDER_STATUSES":
-                    AppConnect.model01.ORDER_STATUSES.Add(new ORDER_STATUSES { status_name = value });
+                    AddSimple("Введите статус заказа",
+                        v => AppConnect.model01.ORDER_STATUSES.Add(new ORDER_STATUSES { status_name = v }));
                     break;
+
+                // ===== СЛОЖНЫЕ ТАБЛИЦЫ =====
+                case "PRODUCTS":
+                    NavigationService.Navigate(new ProductEditPage());
+                    return;
+
+                case "CUSTOMER_ADDRESSES":
+                    MessageBox.Show(
+                        "Адреса добавляются пользователями через личный кабинет",
+                        "Информация",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+
+                case "ORDERS":
+                case "ORDER_ITEMS":
+                case "DELIVERIES":
+                    MessageBox.Show(
+                        "Добавление записей выполняется автоматически системой",
+                        "Информация",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+
+                default:
+                    MessageBox.Show("Добавление не реализовано");
+                    return;
             }
 
             AppConnect.model01.SaveChanges();
@@ -242,31 +273,213 @@ namespace kanzeed.Pages
         // =====================================================
         private void DeleteBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (AppData.CurrentUser == null || AppData.CurrentUser.RoleId != 4)
+            if (AppData.CurrentUser == null)
                 return;
 
-            if (TableDataGrid.SelectedItem == null) return;
-
-            int id = (int)TableDataGrid.SelectedItem.GetType()
-                .GetProperty("ID").GetValue(TableDataGrid.SelectedItem);
-
-            switch (currentTable)
+            // ===== МЕНЕДЖЕР =====
+            if (AppData.CurrentUser.RoleId == 2)
             {
-                case "CATEGORIES":
-                    AppConnect.model01.CATEGORIES.Remove(
-                        AppConnect.model01.CATEGORIES.First(x => x.category_id == id));
-                    break;
-                case "SUPPLIERS":
-                    AppConnect.model01.SUPPLIERS.Remove(
-                        AppConnect.model01.SUPPLIERS.First(x => x.supplier_id == id));
-                    break;
-                default:
-                    MessageBox.Show("Удаление запрещено для этой таблицы");
-                    return;
+                MessageBox.Show(
+                    "Удаление доступно только администратору",
+                    "Доступ запрещён",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
             }
 
-            AppConnect.model01.SaveChanges();
-            LoadTableData(currentTable);
+            // ===== ТОЛЬКО АДМИН =====
+            if (AppData.CurrentUser.RoleId != 4)
+                return;
+
+            if (TableDataGrid.SelectedItem == null)
+            {
+                MessageBox.Show("Выберите запись для удаления");
+                return;
+            }
+
+            int id = (int)TableDataGrid.SelectedItem.GetType()
+                .GetProperty("ID")
+                .GetValue(TableDataGrid.SelectedItem);
+
+            var confirm = MessageBox.Show(
+                "Вы уверены, что хотите удалить выбранную запись?",
+                "Подтверждение удаления",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                bool isUsed = false;
+
+                switch (currentTable)
+                {
+                    case "ORDER_ITEMS":
+                        {
+                            var item = AppConnect.model01.ORDER_ITEMS
+                                .SingleOrDefault(x => x.order_item_id == id);
+
+                            if (item == null) return;
+
+                            AppConnect.model01.ORDER_ITEMS.Remove(item);
+                            break;
+                        }
+
+                    case "DELIVERIES":
+                        {
+                            var delivery = AppConnect.model01.DELIVERIES
+                                .SingleOrDefault(x => x.delivery_id == id);
+
+                            if (delivery == null) return;
+
+                            AppConnect.model01.DELIVERIES.Remove(delivery);
+                            break;
+                        }
+
+                    case "CUSTOMER_ADDRESSES":
+                        {
+                            var address = AppConnect.model01.CUSTOMER_ADDRESSES
+                                .SingleOrDefault(x => x.address_id == id);
+
+                            if (address == null) return;
+
+                            AppConnect.model01.CUSTOMER_ADDRESSES.Remove(address);
+                            break;
+                        }
+
+                    // ===== СПРАВОЧНИКИ С ПРОВЕРКОЙ =====
+
+                    case "CITIES":
+                        if (AppConnect.model01.CUSTOMER_ADDRESSES.Any(a => a.city_id == id))
+                        {
+                            MessageBox.Show("Город используется в адресах клиентов");
+                            return;
+                        }
+                        AppConnect.model01.CITIES.Remove(
+                            AppConnect.model01.CITIES.Single(c => c.city_id == id));
+                        break;
+
+                    case "PRODUCTS":
+                        if (AppConnect.model01.ORDER_ITEMS.Any(oi => oi.product_id == id))
+                        {
+                            MessageBox.Show("Товар используется в заказах");
+                            return;
+                        }
+                        AppConnect.model01.PRODUCTS.Remove(
+                            AppConnect.model01.PRODUCTS.Single(p => p.product_id == id));
+                        break;
+
+                    case "ORDERS":
+                        if (AppConnect.model01.ORDER_ITEMS.Any(oi => oi.order_id == id) ||
+                            AppConnect.model01.DELIVERIES.Any(d => d.order_id == id))
+                        {
+                            MessageBox.Show("Заказ используется в доставках или позициях");
+                            return;
+                        }
+                        AppConnect.model01.ORDERS.Remove(
+                            AppConnect.model01.ORDERS.Single(o => o.order_id == id));
+                        break;
+
+                    case "CATEGORIES":
+                        if (AppConnect.model01.PRODUCTS.Any(p => p.category_id == id))
+                        {
+                            MessageBox.Show("Категория используется в товарах");
+                            return;
+                        }
+                        AppConnect.model01.CATEGORIES.Remove(
+                            AppConnect.model01.CATEGORIES.Single(c => c.category_id == id));
+                        break;
+
+                    case "SUPPLIERS":
+                        if (AppConnect.model01.PRODUCTS.Any(p => p.supplier_id == id))
+                        {
+                            MessageBox.Show("Поставщик используется в товарах");
+                            return;
+                        }
+                        AppConnect.model01.SUPPLIERS.Remove(
+                            AppConnect.model01.SUPPLIERS.Single(s => s.supplier_id == id));
+                        break;
+
+                    case "PAYMENT_METHODS":
+                        {
+                            if (AppConnect.model01.ORDERS.Any(o => o.payment_method_id == id))
+                            {
+                                MessageBox.Show("Метод оплаты используется в заказах");
+                                return;
+                            }
+
+                            var pm = AppConnect.model01.PAYMENT_METHODS
+                                .SingleOrDefault(x => x.payment_method_id == id);
+
+                            if (pm == null) return;
+
+                            AppConnect.model01.PAYMENT_METHODS.Remove(pm);
+                            break;
+                        }
+
+                    case "DELIVERY_METHODS":
+                        {
+                            if (AppConnect.model01.DELIVERIES.Any(d => d.delivery_method_id == id))
+                            {
+                                MessageBox.Show("Метод доставки используется");
+                                return;
+                            }
+
+                            var dm = AppConnect.model01.DELIVERY_METHODS
+                                .SingleOrDefault(x => x.delivery_method_id == id);
+
+                            if (dm == null) return;
+
+                            AppConnect.model01.DELIVERY_METHODS.Remove(dm);
+                            break;
+                        }
+
+                    case "ORDER_STATUSES":
+                        {
+                            if (AppConnect.model01.ORDERS.Any(o => o.status_id == id))
+                            {
+                                MessageBox.Show("Статус используется в заказах");
+                                return;
+                            }
+
+                            var st = AppConnect.model01.ORDER_STATUSES
+                                .SingleOrDefault(x => x.status_id == id);
+
+                            if (st == null) return;
+
+                            AppConnect.model01.ORDER_STATUSES.Remove(st);
+                            break;
+                        }
+                }
+
+                if (isUsed)
+                {
+                    MessageBox.Show(
+                        "Невозможно удалить запись, так как она используется в других таблицах",
+                        "Удаление запрещено",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                AppConnect.model01.SaveChanges();
+                LoadTableData(currentTable);
+
+                MessageBox.Show("Запись успешно удалена",
+                    "Успех",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Ошибка удаления:\n" + ex.Message,
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         // =====================================================
@@ -334,6 +547,115 @@ namespace kanzeed.Pages
             };
 
             return win.ShowDialog() == true ? tb.Text : null;
+        }
+        private void AddSimple(string label, Action<string> addAction)
+        {
+            string value = Prompt("Добавление", label);
+            if (string.IsNullOrWhiteSpace(value))
+                return;
+
+            addAction(value.Trim());
+        }
+        private void ChangeOrderStatus_Click(object sender, RoutedEventArgs e)
+        {
+            // Только менеджер и админ
+            if (AppData.CurrentUser == null ||
+                (AppData.CurrentUser.RoleId != 2 && AppData.CurrentUser.RoleId != 4))
+            {
+                MessageBox.Show("Недостаточно прав");
+                return;
+            }
+
+            if (currentTable != "ORDERS")
+            {
+                MessageBox.Show("Статус можно менять только у заказов");
+                return;
+            }
+
+            if (TableDataGrid.SelectedItem == null)
+            {
+                MessageBox.Show("Выберите заказ");
+                return;
+            }
+
+            int orderId = (int)TableDataGrid.SelectedItem
+                .GetType()
+                .GetProperty("ID")
+                .GetValue(TableDataGrid.SelectedItem);
+
+            var order = AppConnect.model01.ORDERS
+                .SingleOrDefault(o => o.order_id == orderId);
+
+            if (order == null)
+            {
+                MessageBox.Show("Заказ не найден");
+                return;
+            }
+
+            // ===== ОКНО ВЫБОРА СТАТУСА =====
+            var statuses = AppConnect.model01.ORDER_STATUSES.ToList();
+
+            var combo = new ComboBox
+            {
+                ItemsSource = statuses,
+                DisplayMemberPath = "status_name",
+                SelectedValuePath = "status_id",
+                SelectedValue = order.status_id,
+                Margin = new Thickness(10)
+            };
+
+            var btn = new Button
+            {
+                Content = "Сохранить",
+                Margin = new Thickness(10),
+                IsDefault = true
+            };
+
+            var win = new Window
+            {
+                Title = $"Изменение статуса заказа №{order.order_id}",
+                Width = 300,
+                Height = 150,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = Window.GetWindow(this),
+                Content = new StackPanel
+                {
+                    Children =
+            {
+                new TextBlock
+                {
+                    Text = "Выберите новый статус:",
+                    Margin = new Thickness(10)
+                },
+                combo,
+                btn
+            }
+                }
+            };
+
+            btn.Click += (_, __) =>
+            {
+                if (combo.SelectedValue == null)
+                {
+                    MessageBox.Show("Выберите статус");
+                    return;
+                }
+
+                order.status_id = (int)combo.SelectedValue;
+                AppConnect.model01.SaveChanges();
+                win.DialogResult = true;
+            };
+
+            if (win.ShowDialog() == true)
+            {
+                LoadTableData("ORDERS");
+
+                MessageBox.Show(
+                    "Статус заказа успешно изменён",
+                    "Успех",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using kanzeed.ApplicationData;
 using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -22,9 +21,8 @@ namespace kanzeed.Pages
         private TextBlock passwordError;
         private TextBlock confirmPasswordError;
 
-        // Reveal textboxes для отображения пароля (лениво создаются и переиспользуются)
-        private TextBox revealPasswordBox;
-        private TextBox revealConfirmPasswordBox;
+        // Для управления вводом телефона
+        private bool _phoneUpdating;
 
         public Registration()
         {
@@ -41,9 +39,8 @@ namespace kanzeed.Pages
             PasswordBox.PasswordChanged += (s, e) => ClearPasswordError();
             ConfirmPasswordBox.PasswordChanged += (s, e) => ClearConfirmPasswordError();
 
-            // Маска ввода телефона: разрешаем только цифры при вводе, обрабатываем вставку
+            // Обработчики для маски телефона (как на странице аккаунта)
             PhoneTextBox.PreviewTextInput += PhoneTextBox_PreviewTextInput;
-            DataObject.AddPastingHandler(PhoneTextBox, PhoneTextBox_Paste);
         }
 
         #region Inline errors helpers
@@ -170,188 +167,77 @@ namespace kanzeed.Pages
 
         #endregion
 
-        #region Phone mask & input handling
+        #region Phone mask & input handling (как на странице аккаунта)
 
-        private static readonly Regex digitsOnlyRegex = new Regex(@"\D", RegexOptions.Compiled);
-
-        // Разрешаем ввод только цифр
+        // PHONE MASK - ТАК ЖЕ КАК НА СТРАНИЦЕ АККАУНТА
         private void PhoneTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
-            // допускаем только цифры
-            if (!char.IsDigit(e.Text, 0))
-            {
-                e.Handled = true;
-                return;
-            }
+            e.Handled = !char.IsDigit(e.Text, 0);
         }
 
-        // Обработка вставки: очищаем всё кроме цифр
-        private void PhoneTextBox_Paste(object sender, DataObjectPastingEventArgs e)
-        {
-            if (!e.SourceDataObject.GetDataPresent(DataFormats.Text, true)) return;
-            var text = e.SourceDataObject.GetData(DataFormats.Text) as string;
-            if (string.IsNullOrEmpty(text)) return;
-
-            var digits = digitsOnlyRegex.Replace(text, "");
-            // отменяем оригинальную вставку и ставим очищённый вариант
-            e.CancelCommand();
-            var tb = sender as TextBox;
-            if (tb != null)
-            {
-                var selectionStart = tb.SelectionStart;
-                var newText = tb.Text.Remove(tb.SelectionStart, tb.SelectionLength);
-                newText = newText.Insert(selectionStart, digits);
-                tb.Text = newText;
-                tb.CaretIndex = selectionStart + digits.Length;
-                FormatPhoneInTextBox(tb);
-            }
-        }
-
-        // Format phone on text changed (progressive formatting)
         private void PhoneTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var tb = sender as TextBox;
-            if (tb == null) return;
+            if (_phoneUpdating) return;
+            _phoneUpdating = true;
 
-            // Save caret
-            int caret = tb.CaretIndex;
-            FormatPhoneInTextBox(tb);
-            // try to restore caret reasonably
-            tb.CaretIndex = Math.Min(tb.Text.Length, caret);
+            PhoneTextBox.Text = FormatPhone(ExtractDigits(PhoneTextBox.Text));
+            PhoneTextBox.CaretIndex = PhoneTextBox.Text.Length;
+
+            _phoneUpdating = false;
             ClearPhoneError();
         }
 
-        private void FormatPhoneInTextBox(TextBox tb)
+        private string ExtractDigits(string text) =>
+            new string(text.Where(char.IsDigit).ToArray());
+
+        private string FormatPhone(string digits)
         {
-            // Получаем только цифры
-            var digits = digitsOnlyRegex.Replace(tb.Text, "");
+            if (string.IsNullOrEmpty(digits))
+                return "+7";
 
-            // Если начинается с 8 или 7, используем 8 как префикс, иначе добавим 8
-            // Сделаем формат: 8 (XXX) XXX-XX-XX
-            if (digits.StartsWith("8") || digits.StartsWith("7"))
-            {
-                // normalize to start with 8
-                if (digits.StartsWith("7")) digits = "8" + digits.Substring(1);
-            }
-            else if (digits.StartsWith("9") && digits.Length <= 10)
-            {
-                // номер без первого символа — предположим мобильный 9xxxxxxxxx -> добавим 8
-                digits = "8" + digits;
-            }
+            // если начинается с 7 — убираем
+            if (digits.StartsWith("7"))
+                digits = digits.Substring(1);
 
-            string formatted = digits;
-            if (digits.Length <= 1)
-            {
-                formatted = digits;
-            }
-            else
-            {
-                // ensure it starts with 8
-                if (!digits.StartsWith("8")) digits = "8" + digits;
-                // apply formatting progressively
-                // 8 (AAA) BBB-CC-DD
-                var p = digits;
-                string a = p.Length > 1 ? p.Substring(1, Math.Min(3, Math.Max(0, p.Length - 1))) : "";
-                string b = p.Length > 4 ? p.Substring(4, Math.Min(3, p.Length - 4)) : "";
-                string c = p.Length > 7 ? p.Substring(7, Math.Min(2, p.Length - 7)) : "";
-                string d = p.Length > 9 ? p.Substring(9, Math.Min(2, p.Length - 9)) : "";
+            // максимум 10 цифр
+            if (digits.Length > 10)
+                digits = digits.Substring(0, 10);
 
-                formatted = "8";
-                if (!string.IsNullOrEmpty(a)) formatted += $" ({a}";
-                if (a.Length == 3) formatted += $")";
-                if (!string.IsNullOrEmpty(b)) formatted += $" {b}";
-                if (!string.IsNullOrEmpty(c)) formatted += $"-{c}";
-                if (!string.IsNullOrEmpty(d)) formatted += $"-{d}";
-            }
+            if (digits.Length == 0)
+                return "+7";
 
-            // Avoid infinite loop by only setting text if different
-            if (tb.Text != formatted)
-            {
-                tb.Text = formatted;
-            }
+            if (digits.Length <= 3)
+                return "+7 (" + digits;
+
+            if (digits.Length <= 6)
+                return "+7 (" + digits.Substring(0, 3) + ") " +
+                       digits.Substring(3);
+
+            if (digits.Length <= 8)
+                return "+7 (" + digits.Substring(0, 3) + ") " +
+                       digits.Substring(3, 3) + "-" +
+                       digits.Substring(6);
+
+            return "+7 (" + digits.Substring(0, 3) + ") " +
+                   digits.Substring(3, 3) + "-" +
+                   digits.Substring(6, 2) + "-" +
+                   digits.Substring(8);
         }
 
-        // Helper to extract digits from phone for validation / saving
+        // Helper to extract digits from phone for validation
         private string GetDigitsFromPhone()
         {
-            return digitsOnlyRegex.Replace(PhoneTextBox.Text ?? "", "");
+            return ExtractDigits(PhoneTextBox.Text);
         }
-
-        #endregion
-
-        #region Password reveal helpers (не меняют дизайн)
-
-        private void ToggleRevealForPasswordBox(PasswordBox pwdBox, ref TextBox revealBox, Button toggleButton)
-        {
-            try
-            {
-                var parentGrid = pwdBox.Parent as Grid;
-                if (parentGrid == null) return;
-
-                if (revealBox == null)
-                {
-                    // создаём reveal box в той же Grid, колонка 0
-                    revealBox = new TextBox
-                    {
-                        Visibility = Visibility.Collapsed,
-                        Background = Brushes.Transparent,
-                        BorderThickness = new Thickness(0),
-                        Padding = pwdBox.Padding,
-                        FontSize = pwdBox.FontSize,
-                        VerticalContentAlignment = VerticalAlignment.Center,
-                        Foreground = pwdBox.Foreground,
-                        MaxLength = pwdBox.MaxLength
-                    };
-
-                    // Создаем локальную (не-ref) переменную для использования в лямбде
-                    var capturedReveal = revealBox;
-
-                    // подписываемся на событие, используя локальную переменную
-                    capturedReveal.TextChanged += (s, e) =>
-                    {
-                        // при изменении видимого текста синхронизируем значение в PasswordBox
-                        if (pwdBox.Visibility == Visibility.Visible)
-                        {
-                            pwdBox.Password = capturedReveal.Text;
-                        }
-                    };
-
-                    Grid.SetColumn(revealBox, 0);
-                    parentGrid.Children.Add(revealBox);
-                }
-
-                if (revealBox.Visibility == Visibility.Collapsed)
-                {
-                    // показать
-                    revealBox.Text = pwdBox.Password;
-                    pwdBox.Visibility = Visibility.Collapsed;
-                    revealBox.Visibility = Visibility.Visible;
-                    toggleButton.Content = "🙈";
-                }
-                else
-                {
-                    // скрыть
-                    pwdBox.Password = revealBox.Text;
-                    revealBox.Visibility = Visibility.Collapsed;
-                    pwdBox.Visibility = Visibility.Visible;
-                    toggleButton.Content = "👁";
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка переключения видимости пароля: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        private void LoginLink_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            NavigationService?.Navigate(new Authorization());
-        }
-
-
 
         #endregion
 
         #region Registration / validation
+
+        private void LoginLink_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            NavigationService?.Navigate(new Authorization());
+        }
 
         private void RegisterButton_Click(object sender, RoutedEventArgs e)
         {
@@ -364,6 +250,28 @@ namespace kanzeed.Pages
                 var email = EmailTextBox.Text.Trim();
                 var phoneDigits = GetDigitsFromPhone();
 
+                // Проверка уникальности телефона в таблице CUSTOMERS
+                var phoneExistsInCustomers = AppConnect.model01.CUSTOMERS.Any(c => c.phone == phoneDigits);
+
+                // Также проверяем в таблице EMPLOYEES (сотрудники тоже могут иметь телефоны)
+                var phoneExistsInEmployees = AppConnect.model01.EMPLOYEES.Any(emp => emp.phone == phoneDigits);
+
+                if (phoneExistsInCustomers || phoneExistsInEmployees)
+                {
+                    ShowError(phoneError, "Пользователь с таким телефоном уже существует");
+                    return;
+                }
+
+                // Проверка уникальности email в обеих таблицах (перед созданием)
+                var emailExistsInCustomers = AppConnect.model01.CUSTOMERS.Any(c => c.email.ToLower() == email.ToLower());
+                var emailExistsInEmployees = AppConnect.model01.EMPLOYEES.Any(emp => emp.email.ToLower() == email.ToLower());
+
+                if (emailExistsInCustomers || emailExistsInEmployees)
+                {
+                    ShowError(emailError, "Пользователь с таким email уже существует");
+                    return;
+                }
+
                 // Создание нового клиента
                 var newCustomer = new CUSTOMERS
                 {
@@ -371,7 +279,7 @@ namespace kanzeed.Pages
                     first_name = FirstNameTextBox.Text.Trim(),
                     middle_name = MiddleNameTextBox.Text.Trim(),
                     email = email,
-                    phone = PhoneTextBox.Text.Trim(),
+                    phone = phoneDigits, // сохраняем только цифры
                     password = PasswordBox.Password,
                     id_role = 1 // роль клиента
                 };
@@ -436,9 +344,9 @@ namespace kanzeed.Pages
                 ShowError(emailError, "Введите email");
                 ok = false;
             }
-            else if (email.Length > 50)
+            else if (email.Length > 100) // Согласно структуре таблицы nvarchar(100)
             {
-                ShowError(emailError, "Email слишком длинный (макс. 50 символов)");
+                ShowError(emailError, "Email слишком длинный (макс. 100 символов)");
                 ok = false;
             }
             else if (!IsValidEmail(email))
@@ -446,20 +354,13 @@ namespace kanzeed.Pages
                 ShowError(emailError, "Введите корректный email");
                 ok = false;
             }
-            else
-            {
-                // Проверка уникальности email
-                var existsInCustomers = AppConnect.model01.CUSTOMERS.Any(c => c.email.ToLower() == email.ToLower());
-                var existsInEmployees = AppConnect.model01.EMPLOYEES.Any(e => e.email.ToLower() == email.ToLower());
-                if (existsInCustomers || existsInEmployees)
-                {
-                    ShowError(emailError, "Пользователь с таким email уже существует");
-                    ok = false;
-                }
-            }
 
-            // Телефон — обязательный? здесь будем требовать минимум 10 цифр (моб.номер)
+            // Телефон — обязательный, минимум 10 цифр (после +7)
             var digits = GetDigitsFromPhone();
+            // Убираем ведущую 7 если есть (так как формат +7)
+            if (digits.StartsWith("7"))
+                digits = digits.Substring(1);
+
             if (string.IsNullOrEmpty(digits))
             {
                 ShowError(phoneError, "Введите телефон");
@@ -467,13 +368,18 @@ namespace kanzeed.Pages
             }
             else if (digits.Length < 10)
             {
-                ShowError(phoneError, "Телефон должен содержать минимум 10 цифр");
+                ShowError(phoneError, "Телефон должен содержать 10 цифр (без +7)");
+                ok = false;
+            }
+            else if (digits.Length > 20) // Согласно структуре таблицы nvarchar(20)
+            {
+                ShowError(phoneError, "Телефон слишком длинный");
                 ok = false;
             }
 
             // Пароль: требования
-            string password = PasswordBox.Visibility == Visibility.Visible ? PasswordBox.Password : (revealPasswordBox?.Text ?? "");
-            string confirm = ConfirmPasswordBox.Visibility == Visibility.Visible ? ConfirmPasswordBox.Password : (revealConfirmPasswordBox?.Text ?? "");
+            string password = PasswordBox.Password;
+            string confirm = ConfirmPasswordBox.Password;
 
             if (string.IsNullOrEmpty(password))
             {
@@ -487,9 +393,9 @@ namespace kanzeed.Pages
                     ShowError(passwordError, "Пароль должен содержать минимум 6 символов");
                     ok = false;
                 }
-                else if (password.Length > 50)
+                else if (password.Length > 100) // Согласно структуре таблицы nvarchar(100)
                 {
-                    ShowError(passwordError, "Пароль слишком длинный (макс. 50 символов)");
+                    ShowError(passwordError, "Пароль слишком длинный (макс. 100 символов)");
                     ok = false;
                 }
                 else if (password.Contains(" "))
@@ -543,6 +449,39 @@ namespace kanzeed.Pages
             {
                 return false;
             }
+        }
+
+        // Метод для проверки уникальности email в обеих таблицах
+        private bool IsEmailUnique(string email)
+        {
+            // Приводим к нижнему регистру для case-insensitive проверки
+            var emailLower = email.ToLower();
+
+            // Проверяем в таблице CUSTOMERS
+            bool existsInCustomers = AppConnect.model01.CUSTOMERS
+                .Any(c => c.email.ToLower() == emailLower);
+
+            // Проверяем в таблице EMPLOYEES
+            bool existsInEmployees = AppConnect.model01.EMPLOYEES
+                .Any(emp => emp.email.ToLower() == emailLower);
+
+            // Email уникален, если его нет ни в одной таблице
+            return !existsInCustomers && !existsInEmployees;
+        }
+
+        // Метод для проверки уникальности телефона в обеих таблицах
+        private bool IsPhoneUnique(string phoneDigits)
+        {
+            // Проверяем в таблице CUSTOMERS
+            bool existsInCustomers = AppConnect.model01.CUSTOMERS
+                .Any(c => c.phone == phoneDigits);
+
+            // Проверяем в таблице EMPLOYEES
+            bool existsInEmployees = AppConnect.model01.EMPLOYEES
+                .Any(emp => emp.phone == phoneDigits);
+
+            // Телефон уникален, если его нет ни в одной таблице
+            return !existsInCustomers && !existsInEmployees;
         }
 
         #endregion

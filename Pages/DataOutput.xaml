@@ -51,6 +51,7 @@
         <!-- Конвертер -->
         <local:RoleToVisibilityConverter x:Key="RoleToVisibilityConverter"/>
         <local:PriceGreaterThan1000Converter x:Key="PriceGreaterThan1000Converter"/>
+        <local:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
     </Page.Resources>
 
@@ -190,6 +191,52 @@
                     </Grid>
                 </Border>
 
+                <!-- GUEST INFO -->
+                <Border Grid.Row="1"
+        Background="#FFF4E5"
+        BorderBrush="#FFB74D"
+        BorderThickness="1"
+        CornerRadius="8"
+        Padding="16"
+        Margin="20,10"
+        Visibility="{Binding Source={x:Static data:AppData.CurrentUser},
+                     Converter={StaticResource RoleToVisibilityConverter},
+                     ConverterParameter=GuestOnly}">
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="ℹ️"
+                   FontSize="24"
+                   Margin="0,0,12,0"/>
+
+                        <StackPanel>
+                            <TextBlock Text="Вы вошли как гость"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="#E65100"/>
+
+                            <TextBlock Text="В режиме гостя доступен только просмотр каталога.
+Для покупок, корзины и заказов необходимо зарегистрироваться или войти."
+                       FontSize="12"
+                       Foreground="#555"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,8"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="📝 Регистрация"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Width="140"
+                        Click="RegisterButton_Click"/>
+
+                                <Button Content="Войти"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Width="100"
+                        Margin="10,0,0,0"
+                        Click="LoginButton_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- MAIN LIST (catalog) - виден только авторизованным users -->
                 <Border Grid.Row="2" Padding="20"
                             Visibility="{Binding Source={x:Static data:AppData.CurrentUser}, Converter={StaticResource RoleToVisibilityConverter}, ConverterParameter=ViewCatalog}">
@@ -205,7 +252,7 @@
         Padding="15"
         CornerRadius="8"
         BorderThickness="1"
-        BorderBrush="#EEEEEE">
+        BorderBrush="#EEEEEE" Height="150" Width="1150">
 
                                         <Border.Style>
                                             <Style TargetType="Border">
@@ -220,7 +267,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </Border.Style>
-                                        <Grid Height="110">
+                                        <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="100"/>
                                                 <ColumnDefinition Width="*"/>
@@ -234,19 +281,31 @@
                                             </Border>
 
                                             <StackPanel Grid.Column="1" Margin="15,0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding name}" FontSize="14" FontWeight="Medium" Foreground="#333333" TextWrapping="Wrap"/>
-                                                <TextBlock Text="{Binding description}" FontSize="11" Foreground="#666666" TextWrapping="Wrap" MaxHeight="30" TextTrimming="CharacterEllipsis" Margin="0,5,0,0"/>
+                                                <TextBlock Text="{Binding name}" FontSize="14" FontWeight="Medium" Foreground="#333333" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding description}" FontSize="11" Foreground="#666666" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis" Margin="0,5,0,0"/>
                                                 <Border Background="#F0F3FF" CornerRadius="12" Padding="8,3" HorizontalAlignment="Left" Margin="0,5,0,0">
                                                     <TextBlock Text="{Binding CATEGORIES.name}" FontSize="11" Foreground="#4361EE" HorizontalAlignment="Center"/>
                                                 </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="{Binding price, StringFormat={}{0} ₽}"
-                   FontSize="16"
-                   FontWeight="Bold"/>
 
+                                                <!-- СТАРАЯ ЦЕНА (ТОЛЬКО если есть скидка) -->
+                                                <TextBlock Text="{Binding OldPrice, StringFormat={}{0} ₽}"
+               FontSize="13"
+               Foreground="#999999"
+               TextDecorations="Strikethrough"
+               Visibility="{Binding HasDiscount,
+                            Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                                                <!-- НОВАЯ / ОСНОВНАЯ ЦЕНА -->
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding PriceWithDiscount, StringFormat={}{0} ₽}"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Foreground="#333"/>
+
+                                                    <!-- 🔥 ТОЛЬКО если price > 1000 -->
                                                     <TextBlock Text=" 🔥"
            Foreground="#FF9800"
            FontSize="14">
@@ -254,11 +313,8 @@
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding price}" Value="1000">
-                                                                        <!-- НЕ используем, просто пример -->
-                                                                    </DataTrigger>
-
-                                                                    <DataTrigger Binding="{Binding price, Converter={StaticResource PriceGreaterThan1000Converter}}"
+                                                                    <DataTrigger Binding="{Binding price,
+                              Converter={StaticResource PriceGreaterThan1000Converter}}"
                              Value="True">
                                                                         <Setter Property="Visibility" Value="Visible"/>
                                                                     </DataTrigger>
@@ -267,6 +323,7 @@
                                                         </TextBlock.Style>
                                                     </TextBlock>
                                                 </StackPanel>
+
                                             </StackPanel>
 
 

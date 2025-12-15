@@ -47,6 +47,7 @@ namespace kanzeed.Services
         }
 
         // Получить модель для отображения корзины
+        // Получить модель для отображения корзины
         public static List<CartItemViewModel> GetCartItems()
         {
             var result = new List<CartItemViewModel>();
@@ -65,7 +66,8 @@ namespace kanzeed.Services
                     ProductId = pid,
                     ProductName = product.name,
                     UnitPrice = product.price,
-                    Quantity = qty
+                    Quantity = qty,
+                    ProductImage = product.CurrentPhoto // Добавляем фото
                 });
             }
 

@@ -26,6 +26,7 @@ namespace kanzeed.ApplicationData
         }
     
         public virtual DbSet<CATEGORIES> CATEGORIES { get; set; }
+        public virtual DbSet<CITIES> CITIES { get; set; }
         public virtual DbSet<CUSTOMER_ADDRESSES> CUSTOMER_ADDRESSES { get; set; }
         public virtual DbSet<CUSTOMERS> CUSTOMERS { get; set; }
         public virtual DbSet<DELIVERIES> DELIVERIES { get; set; }

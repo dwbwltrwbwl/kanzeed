@@ -1,6 +1,7 @@
 ﻿using kanzeed.ApplicationData;
 using Microsoft.Win32;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -16,6 +17,7 @@ namespace kanzeed.Pages
     {
         private PRODUCTS editingProduct;
         private bool isNew = false;
+        private static readonly string ProductImagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ProductImages");
 
         public ProductEditPage(PRODUCTS product = null)
         {
@@ -81,7 +83,7 @@ namespace kanzeed.Pages
             NameTextBox.Text = editingProduct.name;
             SkuTextBox.Text = editingProduct.sku;
             DescriptionTextBox.Text = editingProduct.description;
-            PriceTextBox.Text = editingProduct.price.ToString();
+            PriceTextBox.Text = editingProduct.price.ToString("F2");
             StockTextBox.Text = editingProduct.stock_quantity.ToString();
 
             // Select category / supplier
@@ -98,43 +100,54 @@ namespace kanzeed.Pages
                 ImagePathTextBox.Text = editingProduct.image;
                 TryLoadImageFromPath(editingProduct.image);
             }
+
+            // Скидка
+            if (editingProduct.discount.HasValue && editingProduct.discount.Value > 0)
+            {
+                IsDiscountedCheckBox.IsChecked = true;
+                DiscountPanel.Visibility = Visibility.Visible;
+                DiscountTextBox.Text = editingProduct.discount.Value.ToString("0.##");
+            }
+            else
+            {
+                IsDiscountedCheckBox.IsChecked = false;
+                DiscountPanel.Visibility = Visibility.Collapsed;
+            }
         }
 
-        private void TryLoadImageFromPath(string path)
+        private void TryLoadImageFromPath(string relativePath)
         {
             try
             {
-                if (string.IsNullOrEmpty(path)) { ProductImage.Source = null; return; }
+                if (string.IsNullOrEmpty(relativePath))
+                {
+                    ProductImage.Source = null;
+                    return;
+                }
 
-                // If path exists as absolute, use it; else try relative to app directory / images folder
-                if (File.Exists(path))
+                // Полный путь к изображению
+                string fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativePath);
+
+                // Если файл не найден, ищем в папке Images
+                if (!File.Exists(fullPath))
                 {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.UriSource = new Uri(path, UriKind.Absolute);
-                    bitmap.EndInit();
-                    ProductImage.Source = bitmap;
+                    string fileName = Path.GetFileName(relativePath);
+                    fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images", fileName);
                 }
-                else
+
+                if (!File.Exists(fullPath))
                 {
-                    // try relative to application folder
-                    var appPath = AppDomain.CurrentDomain.BaseDirectory;
-                    var candidate = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-                    if (File.Exists(candidate))
-                    {
-                        var bitmap = new BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.UriSource = new Uri(candidate, UriKind.Absolute);
-                        bitmap.EndInit();
-                        ProductImage.Source = bitmap;
-                    }
-                    else
-                    {
-                        ProductImage.Source = null;
-                    }
+                    ProductImage.Source = null;
+                    return;
                 }
+
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = new Uri(fullPath, UriKind.Absolute);
+                bitmap.EndInit();
+
+                ProductImage.Source = bitmap;
             }
             catch
             {
@@ -146,37 +159,89 @@ namespace kanzeed.Pages
         {
             var dlg = new OpenFileDialog
             {
-                Filter = "Изображения|*.jpg;*.jpeg;*.png;*.bmp;*.gif"
+                Filter = "Изображения|*.jpg;*.jpeg;*.png;*.bmp;*.gif",
+                Title = "Выберите изображение товара"
             };
 
             if (dlg.ShowDialog() != true)
                 return;
 
-            string imagesDir = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory, "Images");
+            // Папка Images в проекте (рядом с .csproj)
+            string projectImagesFolder = Path.Combine(
+                Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.FullName,
+                "Images");
 
-            if (!Directory.Exists(imagesDir))
-                Directory.CreateDirectory(imagesDir);
+            // Папка Images в выходной директории (bin/Debug или bin/Release)
+            string outputImagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
 
-            string fileName =
-                Path.GetFileNameWithoutExtension(dlg.FileName)
-                + "_" + Guid.NewGuid().ToString("N").Substring(0, 6)
-                + Path.GetExtension(dlg.FileName);
+            // Создаём обе папки, если их нет
+            if (!Directory.Exists(projectImagesFolder))
+                Directory.CreateDirectory(projectImagesFolder);
+            if (!Directory.Exists(outputImagesFolder))
+                Directory.CreateDirectory(outputImagesFolder);
 
-            string destPath = Path.Combine(imagesDir, fileName);
-            File.Copy(dlg.FileName, destPath, true);
+            // Генерируем уникальное имя файла на основе SKU
+            string fileName;
+            if (!string.IsNullOrEmpty(SkuTextBox.Text))
+            {
+                string cleanSku = SkuTextBox.Text.Trim()
+                    .Replace(" ", "_")
+                    .Replace("/", "_")
+                    .Replace("\\", "_")
+                    .Replace(":", "_")
+                    .Replace("*", "_")
+                    .Replace("?", "_")
+                    .Replace("\"", "_")
+                    .Replace("<", "_")
+                    .Replace(">", "_")
+                    .Replace("|", "_");
 
-            string relativePath = Path.Combine("Images", fileName);
+                fileName = $"product_{cleanSku}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(dlg.FileName)}";
+            }
+            else
+            {
+                fileName = $"product_{Guid.NewGuid():N}{Path.GetExtension(dlg.FileName)}";
+            }
 
-            ImagePathTextBox.Text = relativePath;
-            ProductImage.Source = new BitmapImage(new Uri(destPath, UriKind.Absolute));
+            // Убираем оставшиеся недопустимые символы
+            fileName = string.Join("_", fileName.Split(Path.GetInvalidFileNameChars()));
+
+            try
+            {
+                // 1. Копируем в папку проекта (для исходного кода)
+                string projectImagePath = Path.Combine(projectImagesFolder, fileName);
+                File.Copy(dlg.FileName, projectImagePath, true);
+
+                // 2. Копируем в папку bin (для запуска)
+                string outputImagePath = Path.Combine(outputImagesFolder, fileName);
+                File.Copy(dlg.FileName, outputImagePath, true);
+
+                // 3. В БД сохраняем относительный путь: Images/имя_файла
+                ImagePathTextBox.Text = Path.Combine("Images", fileName);
+
+                // 4. Показываем превью
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = new Uri(outputImagePath, UriKind.Absolute);
+                bitmap.EndInit();
+
+                ProductImage.Source = bitmap;
+
+                MessageBox.Show($"Изображение сохранено в папку Images", "Успешно",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при копировании изображения: {ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void ClearImageButton_Click(object sender, RoutedEventArgs e)
         {
             // очищаем путь
             ImagePathTextBox.Text = string.Empty;
-
             // убираем превью
             ProductImage.Source = null;
         }
@@ -208,7 +273,7 @@ namespace kanzeed.Pages
                     return;
                 }
 
-                if (!decimal.TryParse(PriceTextBox.Text.Replace(',', '.'), out decimal price))
+                if (!decimal.TryParse(PriceTextBox.Text.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal price))
                 {
                     MessageBox.Show("Введите корректную цену (например 123.45)", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                     PriceTextBox.Focus();
@@ -234,6 +299,27 @@ namespace kanzeed.Pages
                     return;
                 }
 
+                decimal? discount = null;
+
+                if (IsDiscountedCheckBox.IsChecked == true)
+                {
+                    if (!decimal.TryParse(DiscountTextBox.Text.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal discountValue))
+                    {
+                        MessageBox.Show("Введите корректный процент скидки", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        DiscountTextBox.Focus();
+                        return;
+                    }
+
+                    if (discountValue <= 0 || discountValue >= 90)
+                    {
+                        MessageBox.Show("Скидка должна быть в диапазоне от 1 до 90%", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        DiscountTextBox.Focus();
+                        return;
+                    }
+
+                    discount = discountValue;
+                }
+
                 // Проверки уникальности SKU при добавлении (и при редактировании — если изменили sku)
                 var existingSku = AppConnect.model01.PRODUCTS.FirstOrDefault(p => p.sku == SkuTextBox.Text && p.product_id != editingProduct.product_id);
                 if (existingSku != null)
@@ -252,6 +338,7 @@ namespace kanzeed.Pages
                 editingProduct.category_id = (int)CategoryComboBox.SelectedValue;
                 editingProduct.supplier_id = (int)SupplierComboBox.SelectedValue;
                 editingProduct.image = string.IsNullOrWhiteSpace(ImagePathTextBox.Text) ? null : ImagePathTextBox.Text.Trim();
+                editingProduct.discount = discount;
 
                 if (isNew)
                 {
@@ -260,7 +347,6 @@ namespace kanzeed.Pages
                 else
                 {
                     // при редактировании EF отслеживает объект, если он был получен из контекста;
-                    // однако если продукт пришёл как внешний объект, лучше присоединить/обновить
                     var tracked = AppConnect.model01.PRODUCTS.FirstOrDefault(p => p.product_id == editingProduct.product_id);
                     if (tracked != null)
                     {
@@ -273,6 +359,7 @@ namespace kanzeed.Pages
                         tracked.category_id = editingProduct.category_id;
                         tracked.supplier_id = editingProduct.supplier_id;
                         tracked.image = editingProduct.image;
+                        tracked.discount = editingProduct.discount;
                     }
                     else
                     {
@@ -326,7 +413,25 @@ namespace kanzeed.Pages
                     return;
                 }
 
-                // Удаление
+                // Удаление изображения из папки, если оно существует
+                if (!string.IsNullOrEmpty(editingProduct.image))
+                {
+                    try
+                    {
+                        string imagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, editingProduct.image);
+                        if (File.Exists(imagePath))
+                        {
+                            File.Delete(imagePath);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Логируем ошибку, но не прерываем удаление товара
+                        Debug.WriteLine($"Не удалось удалить изображение: {ex.Message}");
+                    }
+                }
+
+                // Удаление товара из БД
                 var tracked = AppConnect.model01.PRODUCTS.FirstOrDefault(p => p.product_id == editingProduct.product_id);
                 if (tracked != null)
                 {
@@ -346,5 +451,17 @@ namespace kanzeed.Pages
                 MessageBox.Show($"Ошибка удаления: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void IsDiscountedCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            DiscountPanel.Visibility = Visibility.Visible;
+        }
+
+        private void IsDiscountedCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            DiscountPanel.Visibility = Visibility.Collapsed;
+            DiscountTextBox.Text = string.Empty;
+        }
+
     }
 }

@@ -255,16 +255,30 @@ namespace kanzeed.Pages
 
                 // Фильтрация
                 var filteredProducts = allProducts.Where(product =>
-                    product != null &&
-                    product.name != null &&
-                    (product.name.ToLower().Contains(searchText) ||
-                     (product.description != null && product.description.ToLower().Contains(searchText)) ||
-                     (product.sku != null && product.sku.ToLower().Contains(searchText))) &&
-                    (selectedCategory == "Все категории" ||
-                     (product.CATEGORIES != null && product.CATEGORIES.name == selectedCategory)) &&
-                    (!ShowOnlyExpensive.IsChecked.HasValue || !ShowOnlyExpensive.IsChecked.Value || product.price > 1000) &&
-                    (!ShowLowStockWarning.IsChecked.HasValue || !ShowLowStockWarning.IsChecked.Value || product.stock_quantity < 10))
-                    .ToList();
+                product != null &&
+                product.name != null &&
+                (product.name.ToLower().Contains(searchText) ||
+                 (product.description != null && product.description.ToLower().Contains(searchText)) ||
+                 (product.sku != null && product.sku.ToLower().Contains(searchText))) &&
+                (selectedCategory == "Все категории" ||
+                 (product.CATEGORIES != null && product.CATEGORIES.name == selectedCategory)) &&
+
+                // 💰 Дорогие
+                (!ShowOnlyExpensive.IsChecked.HasValue
+                 || !ShowOnlyExpensive.IsChecked.Value
+                 || product.price > 1000) &&
+
+                // 🔻 Со скидкой
+                (!ShowOnlyDiscount.IsChecked.HasValue
+                 || !ShowOnlyDiscount.IsChecked.Value
+                 || product.HasDiscount) &&
+
+                // 📦 Мало на складе
+                (!ShowLowStockWarning.IsChecked.HasValue
+                 || !ShowLowStockWarning.IsChecked.Value
+                 || product.stock_quantity < 10)
+            ).ToList();
+
 
                 // Сортировка — аккуратно с null-ами
                 List<PRODUCTS> sortedProducts;
@@ -277,10 +291,10 @@ namespace kanzeed.Pages
                         sortedProducts = filteredProducts.OrderByDescending(product => product.name ?? string.Empty).ToList();
                         break;
                     case "По цене (возрастание)":
-                        sortedProducts = filteredProducts.OrderBy(product => product.price).ToList();
+                        sortedProducts = filteredProducts.OrderBy(product => product.PriceWithDiscount).ToList();
                         break;
                     case "По цене (убывание)":
-                        sortedProducts = filteredProducts.OrderByDescending(product => product.price).ToList();
+                        sortedProducts = filteredProducts.OrderByDescending(product => product.PriceWithDiscount).ToList();
                         break;
                     // учитываем обе возможные строки (с опечаткой и без)
                     case "По количеству на складу":
@@ -469,5 +483,15 @@ namespace kanzeed.Pages
         {
             NavigationService.Navigate(new TablesPage());
         }
+        private void RegisterButton_Click(object sender, RoutedEventArgs e)
+        {
+            NavigationService.Navigate(new Registration());
+        }
+
+        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            NavigationService.Navigate(new Authorization());
+        }
+
     }
 }
