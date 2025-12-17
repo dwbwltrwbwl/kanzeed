@@ -175,10 +175,6 @@ namespace kanzeed.Pages
                     break;
             }
         }
-
-        // =====================================================
-        // КНОПКИ ОБНОВЛЕНИЯ (ВОТ ЧЕГО НЕ ХВАТАЛО)
-        // =====================================================
         private void RefreshTables_Click(object sender, RoutedEventArgs e)
         {
             LoadTablesList();

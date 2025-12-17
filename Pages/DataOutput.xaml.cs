@@ -95,7 +95,7 @@ namespace kanzeed.Pages
             {
                 // Загружаем товары напрямую из БД, чтобы всегда иметь актуальные данные
                 allProducts = AppConnect.model01.PRODUCTS
-                    .Where(p => p.stock_quantity > 0) // ❗ ТОЛЬКО В НАЛИЧИИ
+                    .Where(p => p.stock_quantity > 0) // ТОЛЬКО В НАЛИЧИИ
                     .OrderBy(p => p.name)
                     .ToList();
 

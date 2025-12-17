@@ -115,8 +115,6 @@ namespace kanzeed.Pages
         }
 
         // Сохранить роль для конкретного пользователя
-        // Сохранить роль для конкретного пользователя
-        // Сохранить роль для конкретного пользователя
         private void SaveRole_Click(object sender, RoutedEventArgs e)
         {
             if (!(sender is Button btn) || !(btn.Tag is UserViewModel uv)) return;
