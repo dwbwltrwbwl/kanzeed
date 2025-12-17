@@ -16,8 +16,9 @@
                 CornerRadius="12"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
-
-            <Grid Margin="40,30">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+                <Grid Margin="40,30">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -309,6 +310,7 @@
                     </TextBlock>
                 </StackPanel>
             </Grid>
+            </ScrollViewer>
         </Border>
     </Grid>
 

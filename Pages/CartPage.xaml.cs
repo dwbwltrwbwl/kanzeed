@@ -18,32 +18,41 @@ namespace kanzeed.Pages
 
         private void LoadCart()
         {
-            var items = CartService.GetCartItems();
-
-            if (!items.Any())
+            // ❗ ИСТИНА — ТОЛЬКО CurrentCart
+            if (AppData.CurrentCart == null || !AppData.CurrentCart.Any())
             {
-                // Показываем сообщение о пустой корзине
+                CartListView.ItemsSource = null;
                 CartListView.Visibility = Visibility.Collapsed;
                 EmptyCartMessage.Visibility = Visibility.Visible;
+
                 TotalAmountText.Text = "Итого: 0 ₽";
                 ItemsCountText.Text = "0 товаров";
+                DeliveryInfoText.Text = "До бесплатной доставки: 2000 ₽";
+                DeliveryInfoText.Foreground = System.Windows.Media.Brushes.Orange;
+
                 return;
             }
 
-            // Показываем список товаров
+            // ===== Корзина НЕ пустая =====
             CartListView.Visibility = Visibility.Visible;
             EmptyCartMessage.Visibility = Visibility.Collapsed;
 
-            CartListView.ItemsSource = items;
+            CartListView.ItemsSource = null;
+            CartListView.ItemsSource = CartService.GetCartItems();
 
-            // Обновляем информацию
-            int totalItems = items.Sum(i => i.Quantity);
-            decimal totalAmount = items.Sum(i => i.LineTotal);
+            int totalItems = AppData.CurrentCart.Sum(i => i.Value);
+
+            decimal totalAmount = AppData.CurrentCart.Sum(c =>
+            {
+                var product = AppConnect.model01.PRODUCTS
+                    .FirstOrDefault(p => p.product_id == c.Key);
+
+                return product != null ? product.price * c.Value : 0;
+            });
 
             TotalAmountText.Text = $"Итого: {totalAmount:N2} ₽";
             ItemsCountText.Text = $"{totalItems} {GetItemWord(totalItems)}";
 
-            // Информация о доставке
             if (totalAmount >= 2000)
             {
                 DeliveryInfoText.Text = "✓ Бесплатная доставка";
@@ -56,6 +65,7 @@ namespace kanzeed.Pages
                 DeliveryInfoText.Foreground = System.Windows.Media.Brushes.Orange;
             }
         }
+
 
         private string GetItemWord(int count)
         {

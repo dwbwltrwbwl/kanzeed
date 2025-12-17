@@ -100,10 +100,6 @@
                                    Foreground="#888888" 
                                    HorizontalAlignment="Center" 
                                    Margin="0,5,0,0"/>
-                        <Button Content="Перейти в каталог" 
-                                Style="{StaticResource PrimaryButtonStyle}" 
-                                Margin="0,15,0,0"
-                                Click="BackButton_Click"/>
                     </StackPanel>
                 </Border>
 
@@ -113,8 +109,7 @@
                               Visibility="Visible">
                     <ListView x:Name="CartListView"
                               BorderThickness="0"
-                              Background="Transparent"
-                              ItemsSource="{Binding}">
+                              Background="Transparent">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <Border Style="{StaticResource CartItemStyle}" Width="900">

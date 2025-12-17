@@ -95,11 +95,24 @@ namespace kanzeed.Pages
             {
                 // Загружаем товары напрямую из БД, чтобы всегда иметь актуальные данные
                 allProducts = AppConnect.model01.PRODUCTS
+                    .Where(p => p.stock_quantity > 0) // ❗ ТОЛЬКО В НАЛИЧИИ
                     .OrderBy(p => p.name)
                     .ToList();
 
                 // Привязка к ListView
-                listProducts.ItemsSource = allProducts;
+                listProducts.ItemsSource = null;
+
+                if (allProducts.Any())
+                {
+                    listProducts.ItemsSource = allProducts;
+                    listProducts.Visibility = Visibility.Visible;
+                    NoDataMessage.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    listProducts.Visibility = Visibility.Collapsed;
+                    NoDataMessage.Visibility = Visibility.Visible;
+                }
 
                 // Перезагрузка списка категорий (для фильтра)
                 categoriesList = new List<string> { "Все категории" };
@@ -256,6 +269,7 @@ namespace kanzeed.Pages
                 // Фильтрация
                 var filteredProducts = allProducts.Where(product =>
                 product != null &&
+                product.stock_quantity > 0 &&
                 product.name != null &&
                 (product.name.ToLower().Contains(searchText) ||
                  (product.description != null && product.description.ToLower().Contains(searchText)) ||
@@ -306,8 +320,22 @@ namespace kanzeed.Pages
                         break;
                 }
 
-                listProducts.ItemsSource = sortedProducts;
+                listProducts.ItemsSource = null;
+
+                if (sortedProducts.Any())
+                {
+                    listProducts.ItemsSource = sortedProducts;
+                    listProducts.Visibility = Visibility.Visible;
+                    NoDataMessage.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    listProducts.Visibility = Visibility.Collapsed;
+                    NoDataMessage.Visibility = Visibility.Visible;
+                }
+
                 UpdateFoundCount(sortedProducts.Count);
+
             }
             catch (Exception ex)
             {
